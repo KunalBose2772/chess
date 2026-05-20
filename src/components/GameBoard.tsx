@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Chessboard } from 'react-chessboard'
 import { Chess } from 'chess.js'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth'
-import { Crown, MessageSquare, RotateCcw, Flag, Clock, Send } from 'lucide-react'
+import { MessageSquare, RotateCcw, Flag, Clock, Send, Zap } from 'lucide-react'
 import Link from 'next/link'
 
 interface Move {
@@ -37,6 +37,45 @@ interface GameBoardProps {
   initialFen?: string
 }
 
+function PlayerBar({
+  player,
+  isActive,
+  isTop,
+  gameResult,
+}: {
+  player: GamePlayer
+  isActive: boolean
+  isTop: boolean
+  gameResult: string | null
+}) {
+  const avatarHue = player.username.charCodeAt(0) * 37 % 360
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 card-surface !rounded-2xl">
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0"
+        style={{ background: `hsl(${avatarHue}, 55%, 48%)` }}
+      >
+        {player.username[0].toUpperCase()}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm text-[var(--text-primary)] truncate">{player.username}</p>
+        <p className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+          <Zap className="w-3 h-3 text-[var(--primary)]" /> {player.rating}
+        </p>
+      </div>
+      {!gameResult && (
+        <div className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
+          isActive
+            ? 'bg-[var(--primary)]/10 text-[var(--primary)] animate-pulse'
+            : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+        }`}>
+          {isActive ? (isTop ? '⏳ Waiting' : '✓ Your turn') : ''}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function GameBoard({
   gameId,
   playerColor,
@@ -53,10 +92,10 @@ export default function GameBoard({
   const [resultMsg, setResultMsg] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'moves' | 'chat'>('moves')
   const chatRef = useRef<HTMLDivElement>(null)
+  const movesRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
-  // ── Supabase Realtime subscriptions ──────────────────────────────────────
-  // Move channel: broadcast pattern (doc: game events via Supabase Realtime)
+  // ── Realtime subscriptions ────────────────────────────────────────────────
   useEffect(() => {
     const moveChannel = supabase
       .channel(`game:${gameId}:moves`)
@@ -66,6 +105,9 @@ export default function GameBoard({
           ...prev,
           { san: payload.san, from: '', to: '', moveNumber: payload.moveNumber },
         ])
+        setTimeout(() => {
+          movesRef.current?.scrollTo({ top: movesRef.current.scrollHeight, behavior: 'smooth' })
+        }, 50)
       })
       .on('broadcast', { event: 'game_over' }, ({ payload }: { payload: { result: string; message: string } }) => {
         setGameResult(payload.result)
@@ -73,7 +115,6 @@ export default function GameBoard({
       })
       .subscribe()
 
-    // Chat: listen to DB changes (Realtime DB changes for game_chat table)
     const chatChannel = supabase
       .channel(`game:${gameId}:chat`)
       .on(
@@ -94,7 +135,7 @@ export default function GameBoard({
     }
   }, [gameId, supabase])
 
-  // ── Load existing moves from DB ──────────────────────────────────────────
+  // ── Load existing state ───────────────────────────────────────────────────
   useEffect(() => {
     ;(async () => {
       const { data: moves } = await supabase
@@ -123,17 +164,14 @@ export default function GameBoard({
     })()
   }, [gameId, supabase])
 
-  // ── Make a move ──────────────────────────────────────────────────────────
+  // ── Move handler ──────────────────────────────────────────────────────────
   const onPieceDrop = useCallback(
     ({ sourceSquare, targetSquare, piece }: { sourceSquare: string; targetSquare: string | null; piece: { pieceType: string } }) => {
-      if (!targetSquare) return false
-      if (!user) return false
-      // Only allow moves on your turn
+      if (!targetSquare || !user || gameResult) return false
       const myTurn =
         (game.turn() === 'w' && playerColor === 'white') ||
         (game.turn() === 'b' && playerColor === 'black')
       if (!myTurn) return false
-      if (gameResult) return false
 
       try {
         const move = game.move({
@@ -147,29 +185,24 @@ export default function GameBoard({
         setGame(newGame)
         const moveNum = moveHistory.length + 1
         setMoveHistory((prev) => [...prev, { san: move.san, from: sourceSquare, to: targetSquare, moveNumber: moveNum }])
+        setTimeout(() => {
+          movesRef.current?.scrollTo({ top: movesRef.current.scrollHeight, behavior: 'smooth' })
+        }, 50)
 
-        // Persist move to DB
         fetch(`/api/games/${gameId}/move`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            san: move.san,
-            fromSq: sourceSquare,
-            toSq: targetSquare,
-            fenAfter: newGame.fen(),
-            moveNumber: moveNum,
-            promotion: move.promotion ?? null,
+            san: move.san, fromSq: sourceSquare, toSq: targetSquare,
+            fenAfter: newGame.fen(), moveNumber: moveNum, promotion: move.promotion ?? null,
           }),
         })
 
-        // Broadcast move to opponent via Supabase Realtime
         supabase.channel(`game:${gameId}:moves`).send({
-          type: 'broadcast',
-          event: 'move',
+          type: 'broadcast', event: 'move',
           payload: { san: move.san, fen: newGame.fen(), moveNumber: moveNum },
         })
 
-        // Check game over
         if (newGame.isGameOver()) {
           let result: '1-0' | '0-1' | '1/2-1/2' = '1/2-1/2'
           let msg = 'Draw!'
@@ -183,52 +216,37 @@ export default function GameBoard({
           }
           setGameResult(result)
           setResultMsg(msg)
-
-          // Notify opponent via broadcast
           supabase.channel(`game:${gameId}:moves`).send({
-            type: 'broadcast',
-            event: 'game_over',
-            payload: { result, message: msg },
+            type: 'broadcast', event: 'game_over', payload: { result, message: msg },
           })
-
-          // Update DB
           fetch(`/api/games/${gameId}/move`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ result }),
           })
         }
-
         return true
-      } catch {
-        return false
-      }
+      } catch { return false }
     },
     [game, gameId, gameResult, moveHistory.length, playerColor, supabase, user]
   )
 
-  // ── Send chat ────────────────────────────────────────────────────────────
   const sendChat = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!chatInput.trim() || !user) return
     await supabase.from('game_chat').insert({
-      game_id: gameId,
-      user_id: user.id,
-      username: user.username,
-      message: chatInput.trim(),
+      game_id: gameId, user_id: user.id, username: user.username, message: chatInput.trim(),
     })
     setChatInput('')
   }
 
-  // ── Resign ───────────────────────────────────────────────────────────────
   const handleResign = async () => {
     if (!user || gameResult) return
     const result: '1-0' | '0-1' = playerColor === 'white' ? '0-1' : '1-0'
     setGameResult(result)
-    setResultMsg(`${playerColor === 'white' ? 'White' : 'Black'} resigned. ${result === '1-0' ? 'White' : 'Black'} wins!`)
+    setResultMsg(`${playerColor === 'white' ? 'White' : 'Black'} resigned.`)
     supabase.channel(`game:${gameId}:moves`).send({
-      type: 'broadcast',
-      event: 'game_over',
+      type: 'broadcast', event: 'game_over',
       payload: { result, message: `${playerColor === 'white' ? 'White' : 'Black'} resigned.` },
     })
     await fetch(`/api/games/${gameId}/move`, {
@@ -238,122 +256,117 @@ export default function GameBoard({
     })
   }
 
-  const turnLabel = game.turn() === 'w' ? 'White' : 'Black'
   const isMyTurn =
     (game.turn() === 'w' && playerColor === 'white') ||
     (game.turn() === 'b' && playerColor === 'black')
 
+  const opponent = playerColor === 'white' ? blackPlayer : whitePlayer
+  const me = playerColor === 'white' ? whitePlayer : blackPlayer
+
+  // Move pairs for display
+  const movePairs = moveHistory.reduce<Move[][]>((rows, m, i) => {
+    if (i % 2 === 0) rows.push([m])
+    else rows[rows.length - 1].push(m)
+    return rows
+  }, [])
+
   return (
-    <div className="flex flex-col xl:flex-row gap-6 w-full max-w-7xl mx-auto">
-      {/* ── Board ── */}
-      <div className="flex-1 flex flex-col gap-4">
-        {/* Opponent info */}
-        <div className="glass-panel p-4 rounded-2xl border border-white/5 flex items-center gap-3">
-          <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center font-bold text-sm text-white">
-            {playerColor === 'white'
-              ? blackPlayer.username[0].toUpperCase()
-              : whitePlayer.username[0].toUpperCase()}
-          </div>
-          <div>
-            <p className="font-semibold text-white">
-              {playerColor === 'white' ? blackPlayer.username : whitePlayer.username}
-            </p>
-            <p className="text-xs text-slate-400">
-              ⚡ {playerColor === 'white' ? blackPlayer.rating : whitePlayer.rating}
-            </p>
-          </div>
-          <div className={`ml-auto px-3 py-1.5 rounded-lg text-xs font-semibold ${
-            !isMyTurn && !gameResult
-              ? 'bg-indigo-500/20 text-indigo-300 animate-pulse'
-              : 'bg-white/5 text-slate-400'
-          }`}>
-            {gameResult ? '⏸ Game Over' : !isMyTurn ? '⏳ Their turn' : ''}
+    /*
+     * Outer: fills the parent h-screen main container
+     * Layout: on desktop → row (board | panel)
+     *          on mobile  → column (panel top-mini | board | actions)
+     */
+    <div className="w-full h-full flex flex-col lg:flex-row gap-0 overflow-hidden">
+
+      {/* ── BOARD COLUMN ─────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col gap-2 p-3 sm:p-4 min-h-0 overflow-hidden">
+
+        {/* Opponent bar */}
+        <PlayerBar
+          player={opponent}
+          isActive={!isMyTurn && !gameResult}
+          isTop
+          gameResult={gameResult}
+        />
+
+        {/* Game result overlay banner */}
+        <AnimatePresence>
+          {resultMsg && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-elevated !py-3 text-center !border-[var(--primary)]/20"
+            >
+              <p className="font-semibold text-[var(--text-primary)] text-sm">{resultMsg}</p>
+              <Link
+                href="/play"
+                className="mt-1 inline-flex items-center gap-1.5 text-xs text-[var(--primary)] hover:underline"
+              >
+                <RotateCcw className="w-3 h-3" /> Play again
+              </Link>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* The chessboard — height-first: never taller than available space */}
+        <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden p-1">
+          <div
+            className="card-elevated !p-2 sm:!p-3"
+            style={{ height: '100%', aspectRatio: '1 / 1', maxWidth: '100%' }}
+          >
+            <div className="w-full h-full rounded-xl overflow-hidden">
+              <Chessboard
+                options={{
+                  position: game.fen(),
+                  boardOrientation: playerColor,
+                  onPieceDrop: onPieceDrop,
+                  darkSquareStyle: { backgroundColor: '#2563EB' },
+                  lightSquareStyle: { backgroundColor: '#EFF6FF' },
+                  animationDurationInMs: 150,
+                  allowDragging: !gameResult,
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Game result banner */}
-        {resultMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="px-6 py-4 glass-panel border border-indigo-500/30 rounded-2xl text-center"
-          >
-            <p className="text-xl font-bold text-white font-outfit">{resultMsg}</p>
-            <Link
-              href="/play"
-              className="mt-3 inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" /> Play again
-            </Link>
-          </motion.div>
-        )}
-
-        {/* Chessboard */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative glass-panel p-3 rounded-2xl shadow-2xl shadow-indigo-500/20 border border-white/5"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-2xl pointer-events-none" />
-          <div className="relative rounded-xl overflow-hidden">
-            <Chessboard
-              options={{
-                position: game.fen(),
-                boardOrientation: playerColor,
-                onPieceDrop: onPieceDrop,
-                darkSquareStyle: { backgroundColor: '#4f46e5' },
-                lightSquareStyle: { backgroundColor: '#e0e7ff' },
-                animationDurationInMs: 200,
-                allowDragging: !gameResult,
-              }}
+        {/* My bar + resign */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <PlayerBar
+              player={{ ...me, username: `${me.username} (you)` }}
+              isActive={isMyTurn && !gameResult}
+              isTop={false}
+              gameResult={gameResult}
             />
           </div>
-        </motion.div>
-
-        {/* My info + controls */}
-        <div className="glass-panel p-4 rounded-2xl border border-white/5 flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-sm text-white">
-            {user?.username?.[0]?.toUpperCase() ?? 'Y'}
-          </div>
-          <div>
-            <p className="font-semibold text-white">{user?.username ?? 'You'} ({playerColor})</p>
-            <p className="text-xs text-slate-400">⚡ {user?.rating}</p>
-          </div>
           {!gameResult && (
-            <div className="ml-auto flex items-center gap-2">
-              <div className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                isMyTurn ? 'bg-emerald-500/20 text-emerald-300 animate-pulse' : 'bg-white/5 text-slate-400'
-              }`}>
-                {isMyTurn ? `✓ Your turn (${turnLabel})` : ''}
-              </div>
-              <button
-                onClick={handleResign}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-colors"
-              >
-                <Flag className="w-3.5 h-3.5" /> Resign
-              </button>
-            </div>
+            <button
+              onClick={handleResign}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-red-500 dark:text-red-400 border border-red-200 dark:border-red-500/25 bg-red-50 dark:bg-red-500/[0.06] hover:bg-red-100 dark:hover:bg-red-500/10 transition-colors flex-shrink-0"
+            >
+              <Flag className="w-3.5 h-3.5" /> Resign
+            </button>
           )}
         </div>
       </div>
 
-      {/* ── Side panel: moves + chat ── */}
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="w-full xl:w-80 glass-panel rounded-2xl border border-white/5 flex flex-col overflow-hidden"
-      >
+      {/* ── SIDE PANEL ───────────────────────────────────────────────────── */}
+      <div className="w-full lg:w-72 xl:w-80 flex flex-col border-t lg:border-t-0 lg:border-l border-[var(--border-primary)] min-h-0">
+
         {/* Tabs */}
-        <div className="flex border-b border-white/5">
+        <div className="flex border-b border-[var(--border-primary)] flex-shrink-0">
           {(['moves', 'chat'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
-                activeTab === t ? 'text-white border-b-2 border-indigo-500' : 'text-slate-400 hover:text-white'
+              className={`flex-1 py-3 text-xs font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === t
+                  ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {t === 'moves' ? <Clock className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+              {t === 'moves' ? <Clock className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
               {t === 'moves' ? 'Moves' : 'Chat'}
             </button>
           ))}
@@ -361,19 +374,17 @@ export default function GameBoard({
 
         {/* Move history */}
         {activeTab === 'moves' && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-1">
-            {moveHistory.length === 0 ? (
-              <p className="text-slate-500 text-sm text-center mt-8">No moves yet.</p>
+          <div ref={movesRef} className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
+            {movePairs.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-xs text-[var(--text-muted)]">No moves yet</p>
+              </div>
             ) : (
-              moveHistory.reduce<Move[][]>((rows, m, i) => {
-                if (i % 2 === 0) rows.push([m])
-                else rows[rows.length - 1].push(m)
-                return rows
-              }, []).map((pair, i) => (
-                <div key={i} className="flex items-center text-sm bg-white/5 rounded-lg px-3 py-1.5">
-                  <span className="text-slate-500 w-7">{i + 1}.</span>
-                  <span className="flex-1 font-mono text-white font-medium">{pair[0].san}</span>
-                  <span className="flex-1 font-mono text-slate-300">{pair[1]?.san ?? ''}</span>
+              movePairs.map((pair, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">
+                  <span className="text-[var(--text-muted)] w-6 flex-shrink-0 tabular-nums">{i + 1}.</span>
+                  <span className="flex-1 font-mono font-semibold text-[var(--text-primary)]">{pair[0].san}</span>
+                  <span className="flex-1 font-mono text-[var(--text-secondary)]">{pair[1]?.san ?? ''}</span>
                 </div>
               ))
             )}
@@ -382,43 +393,45 @@ export default function GameBoard({
 
         {/* Chat */}
         {activeTab === 'chat' && (
-          <div className="flex-1 flex flex-col">
-            <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div ref={chatRef} className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
               {chatMessages.length === 0 ? (
-                <p className="text-slate-500 text-sm text-center mt-8">No messages yet.</p>
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-xs text-[var(--text-muted)]">No messages yet</p>
+                </div>
               ) : (
                 chatMessages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`text-sm rounded-xl px-3 py-2 ${
+                    className={`text-xs rounded-xl px-3 py-2 max-w-[85%] ${
                       msg.username === user?.username
-                        ? 'bg-indigo-500/20 text-indigo-200 ml-4'
-                        : 'bg-white/5 text-slate-300 mr-4'
+                        ? 'bg-[var(--primary)]/10 text-[var(--primary)] self-end'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] self-start'
                     }`}
                   >
-                    <span className="font-semibold text-white text-xs">{msg.username}: </span>
+                    <span className="font-semibold block text-[var(--text-muted)] mb-0.5 text-[10px]">{msg.username}</span>
                     {msg.message}
                   </div>
                 ))
               )}
             </div>
-            <form onSubmit={sendChat} className="p-3 border-t border-white/5 flex gap-2">
+            <form onSubmit={sendChat} className="p-3 border-t border-[var(--border-primary)] flex gap-2 flex-shrink-0">
               <input
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Say something..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-colors"
               />
               <button
                 type="submit"
-                className="p-2 bg-indigo-500 rounded-xl hover:bg-indigo-600 transition-colors"
+                className="w-8 h-8 bg-[var(--primary)] rounded-xl flex items-center justify-center hover:bg-blue-700 transition-colors flex-shrink-0"
               >
-                <Send className="w-4 h-4 text-white" />
+                <Send className="w-3.5 h-3.5 text-white" />
               </button>
             </form>
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   )
 }

@@ -59,18 +59,23 @@ export default function GameClient({ gameId }: { gameId: number }) {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-indigo-400 animate-spin" />
+      <div className="flex-1 h-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 text-[var(--primary)] animate-spin" />
+          </div>
+          <p className="text-sm text-[var(--text-muted)]">Loading game…</p>
+        </div>
       </div>
     )
   }
 
   if (error || !game) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="glass-panel p-8 rounded-2xl flex items-center gap-4 border border-red-500/20">
-          <AlertCircle className="w-8 h-8 text-red-400" />
-          <p className="text-white text-lg font-semibold">{error ?? 'Something went wrong.'}</p>
+      <div className="flex-1 h-full flex items-center justify-center p-6">
+        <div className="card-elevated flex items-center gap-4 !border-red-200 dark:!border-red-500/25">
+          <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
+          <p className="text-sm font-semibold text-[var(--text-primary)]">{error ?? 'Something went wrong.'}</p>
         </div>
       </div>
     )
@@ -80,12 +85,14 @@ export default function GameClient({ gameId }: { gameId: number }) {
   const bp = Array.isArray(game.black_profile) ? game.black_profile[0] : game.black_profile
 
   return (
-    <GameBoard
-      gameId={game.id}
-      playerColor={playerColor}
-      whitePlayer={{ id: game.white_id, username: wp.username, rating: wp.rating }}
-      blackPlayer={{ id: game.black_id, username: bp.username, rating: bp.rating }}
-      initialFen={game.fen}
-    />
+    <div className="flex-1 h-full flex flex-col min-h-0">
+      <GameBoard
+        gameId={game.id}
+        playerColor={playerColor}
+        whitePlayer={{ id: game.white_id, username: wp.username, rating: wp.rating }}
+        blackPlayer={{ id: game.black_id, username: bp.username, rating: bp.rating }}
+        initialFen={game.fen}
+      />
+    </div>
   )
 }

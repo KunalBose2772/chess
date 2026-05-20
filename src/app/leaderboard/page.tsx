@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Trophy } from 'lucide-react'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Leaderboard - ChessOnline',
+  title: 'Leaderboard — ChessOnline',
   description: 'Top rated chess players on ChessOnline ranked by Elo rating.',
 }
 
@@ -26,77 +26,103 @@ export default async function LeaderboardPage() {
 
   const topPlayers: Profile[] = players ?? []
 
-  const rankBadge = (i: number) => {
-    if (i === 0) return '🥇'
-    if (i === 1) return '🥈'
-    if (i === 2) return '🥉'
-    return `#${i + 1}`
+  const rankDisplay = (i: number) => {
+    if (i === 0) return { emoji: '🥇', color: '#F59E0B' }
+    if (i === 1) return { emoji: '🥈', color: '#94A3B8' }
+    if (i === 2) return { emoji: '🥉', color: '#D97706' }
+    return { emoji: `#${i + 1}`, color: 'var(--text-muted)' }
   }
 
   return (
-    <div className="flex flex-col flex-1 w-full px-6 py-12 relative">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="max-w-4xl mx-auto w-full relative z-10 flex flex-col gap-8">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full glass-panel border border-indigo-500/20 text-indigo-300 text-sm font-medium">
-            <Trophy className="w-4 h-4" /> Top 50 Players
-          </div>
-          <h1 className="text-5xl font-bold font-outfit text-white">
-            Leaderboard
-          </h1>
-          <p className="text-slate-400 mt-3">Ranked by Elo rating. Updated after every game.</p>
+    <div className="page-section">
+      <div className="page-spot-tl" />
+      <div className="page-spot-br" />
+
+      <div className="page-container">
+        {/* Header */}
+        <div className="flex flex-col gap-3">
+          <span className="section-label flex items-center gap-2">
+            <Trophy className="w-3.5 h-3.5" /> Rankings
+          </span>
+          <h1 className="page-heading">Leaderboard</h1>
+          <p className="page-subheading">
+            Top 50 players ranked by Elo rating. Updated live after every game.
+          </p>
         </div>
 
         {topPlayers.length === 0 ? (
-          <div className="glass-panel p-12 rounded-2xl border border-white/5 text-center">
-            <Trophy className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-            <p className="text-slate-400">No players yet. Be the first to play!</p>
+          <div className="card-elevated flex flex-col items-center gap-4 py-20 text-center">
+            <Trophy className="w-10 h-10 text-[var(--text-muted)]" />
+            <p className="page-subheading mx-auto">No players yet. Be the first to play!</p>
           </div>
         ) : (
-          <div className="glass-panel rounded-2xl border border-white/5 overflow-hidden">
-            <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-x-4 px-6 py-4 border-b border-white/5 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+          <div className="card-elevated !p-0 overflow-hidden">
+            {/* Table Header */}
+            <div className="table-header grid grid-cols-[2.5rem_1fr_6rem_5rem_7rem_5rem]">
               <span>Rank</span>
               <span>Player</span>
               <span className="text-right">Rating</span>
               <span className="text-right">Games</span>
-              <span className="text-right">W/L/D</span>
+              <span className="text-right">W / L / D</span>
               <span className="text-right">Win%</span>
             </div>
+
             {topPlayers.map((player, i) => {
               const winPct = player.games_played > 0
                 ? Math.round((player.wins / player.games_played) * 100)
                 : 0
+              const rank = rankDisplay(i)
+              const avatarHue = (i * 47 + 220) % 360
+
               return (
                 <div
                   key={player.username}
-                  className={`grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-x-4 px-6 py-4 border-b border-white/5 last:border-0 items-center transition-colors hover:bg-white/5 ${
-                    i < 3 ? 'bg-gradient-to-r from-white/[0.03] to-transparent' : ''
-                  }`}
+                  className={`table-row grid grid-cols-[2.5rem_1fr_6rem_5rem_7rem_5rem] ${i < 3 ? 'bg-[var(--primary)]/[0.015]' : ''}`}
                 >
-                  <span className="text-lg font-bold w-8">{rankBadge(i)}</span>
+                  {/* Rank */}
+                  <span className="text-sm font-bold" style={{ color: rank.color }}>
+                    {rank.emoji}
+                  </span>
+
+                  {/* Player */}
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white"
-                      style={{
-                        background: `hsl(${(i * 47 + 220) % 360}, 60%, 45%)`,
-                      }}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs text-white flex-shrink-0"
+                      style={{ background: `hsl(${avatarHue}, 55%, 48%)` }}
                     >
                       {player.username[0].toUpperCase()}
                     </div>
-                    <span className="font-semibold text-white">{player.username}</span>
+                    <span className="font-semibold text-sm text-[var(--text-primary)] truncate">
+                      {player.username}
+                    </span>
+                    {i < 3 && <span className="badge hidden sm:inline-flex">Elite</span>}
                   </div>
-                  <span className="text-right font-bold text-indigo-400 tabular-nums">{player.rating}</span>
-                  <span className="text-right text-slate-400 tabular-nums">{player.games_played}</span>
-                  <div className="text-right text-xs font-medium tabular-nums">
-                    <span className="text-emerald-400">{player.wins}</span>
-                    <span className="text-slate-500">/</span>
-                    <span className="text-red-400">{player.losses}</span>
-                    <span className="text-slate-500">/</span>
-                    <span className="text-slate-400">{player.draws}</span>
+
+                  {/* Rating */}
+                  <span className="text-right font-bold text-[var(--primary)] tabular-nums text-sm">
+                    {player.rating}
+                  </span>
+
+                  {/* Games */}
+                  <span className="text-right text-[var(--text-muted)] tabular-nums text-sm">
+                    {player.games_played}
+                  </span>
+
+                  {/* W/L/D */}
+                  <div className="text-right text-xs font-semibold tabular-nums flex items-center justify-end gap-1">
+                    <span className="text-emerald-600 dark:text-emerald-400">{player.wins}</span>
+                    <span className="text-[var(--text-muted)]">/</span>
+                    <span className="text-red-500 dark:text-red-400">{player.losses}</span>
+                    <span className="text-[var(--text-muted)]">/</span>
+                    <span className="text-[var(--text-muted)]">{player.draws}</span>
                   </div>
+
+                  {/* Win% */}
                   <div className="text-right">
                     <span className={`text-sm font-semibold ${
-                      winPct >= 60 ? 'text-emerald-400' : winPct >= 40 ? 'text-slate-300' : 'text-red-400'
+                      winPct >= 60 ? 'text-emerald-600 dark:text-emerald-400'
+                      : winPct >= 40 ? 'text-[var(--text-secondary)]'
+                      : 'text-red-500 dark:text-red-400'
                     }`}>
                       {winPct}%
                     </span>

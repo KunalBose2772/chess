@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import GameClient from '@/components/GameClient'
 import { Loader2 } from 'lucide-react'
 
-export const metadata = { title: 'Live Game - ChessOnline' }
+export const metadata = { title: 'Live Game — ChessOnline' }
 
 export default async function GamePage({
   params,
@@ -13,17 +13,25 @@ export default async function GamePage({
   const gameId = parseInt(id, 10)
 
   return (
-    <div className="flex flex-col flex-1 w-full p-6 md:p-8 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="max-w-7xl mx-auto w-full relative z-10">
-        <Suspense fallback={
-          <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-            <Loader2 className="w-12 h-12 text-indigo-400 animate-spin" />
+    /* 
+     * No padding, no max-width — GameBoard owns all the space
+     * h-full inherits from the <main> which is h-screen in layout.tsx
+     */
+    <div className="w-full h-full flex flex-col overflow-hidden bg-[var(--bg-main)]">
+      <Suspense
+        fallback={
+          <div className="flex-1 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-[var(--primary)] animate-spin" />
+              </div>
+              <p className="text-sm text-[var(--text-muted)]">Loading game…</p>
+            </div>
           </div>
-        }>
-          <GameClient gameId={gameId} />
-        </Suspense>
-      </div>
+        }
+      >
+        <GameClient gameId={gameId} />
+      </Suspense>
     </div>
   )
 }

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Jost, Montserrat } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import AuthProvider from "@/components/AuthProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+const jost = Jost({ subsets: ["latin"], variable: "--font-jost" });
+const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
 
 export const metadata: Metadata = {
   title: "ChessOnline - Play Premium Chess",
@@ -26,14 +27,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${outfit.variable} dark antialiased h-full`}
+      className={`${jost.variable} ${montserrat.variable} dark antialiased h-full overflow-hidden`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col font-inter selection:bg-indigo-500/30">
-        <AuthProvider>
-          <Navbar />
-          <main className="flex-1 flex flex-col">{children}</main>
-        </AuthProvider>
-      </body>
+        <body className="h-full flex flex-row font-montserrat selection:bg-primary/30 transition-colors duration-300 overflow-hidden">
+          <ThemeProvider>
+            <AuthProvider>
+              <Navbar />
+              <main className="flex-1 flex flex-col min-w-0 overflow-y-auto h-full relative transition-colors duration-300">
+                {children}
+              </main>
+            </AuthProvider>
+          </ThemeProvider>
+        </body>
     </html>
   );
 }
