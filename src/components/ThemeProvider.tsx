@@ -10,32 +10,17 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+  const [theme] = useState<'light' | 'dark'>('dark')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    const saved = localStorage.getItem('theme') as 'light' | 'dark'
-    if (saved === 'light') {
-      setTheme('light')
-      document.documentElement.classList.remove('dark')
-    } else {
-      setTheme('dark')
-      document.documentElement.classList.add('dark')
-    }
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('theme', 'dark')
   }, [])
 
   const toggleTheme = () => {
-    setTheme((prev) => {
-      const newTheme = prev === 'dark' ? 'light' : 'dark'
-      localStorage.setItem('theme', newTheme)
-      if (newTheme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-      return newTheme
-    })
+    // Persistent dark theme active: toggle disabled
   }
 
   return (

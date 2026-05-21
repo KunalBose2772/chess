@@ -26,33 +26,13 @@
 }
 
 :root {
-  /* LIGHT MODE - Silver Editorial Luxury */
+  /* CINEMATIC DEEP SPACE - GLOBAL DARK BASELINE */
   --primary: #2563EB;
   --accent: #3B82F6;
   
-  --bg-main: #EEF2F6;
-  --bg-secondary: #E2E8F0;
-  --bg-sidebar: rgba(255, 255, 255, 0.45);
-  --bg-surface: rgba(255, 255, 255, 0.5);
-  --bg-elevated: #FFFFFF;
-  
-  --border-primary: rgba(15, 23, 42, 0.05);
-  --border-hover: rgba(37, 99, 235, 0.12);
-  
-  --text-primary: #0F172A;
-  --text-secondary: #334155;
-  --text-muted: #64748B;
-  --text-disabled: #94A3B8;
-
-  --blue-glow: 0 0 40px rgba(37,99,235,0.06);
-  --soft-shadow: 0 30px 80px rgba(15,23,42,0.08);
-}
-
-.dark {
-  /* DARK MODE - Cinematic Deep Space */
   --bg-main: #04060A;
   --bg-secondary: #070B14;
-  --bg-sidebar: rgba(5, 10, 20, 0.55);
+  --bg-sidebar: #080C16;
   --bg-surface: rgba(17, 24, 39, 0.4);
   --bg-elevated: #111827;
   
@@ -82,12 +62,10 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.04em !important;
 }
 
-/* Translucent Premium Glass */
+/* Translucent Premium Sidebar & Grid divider */
 .glass-sidebar {
   background: var(--bg-sidebar);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border-right: 1px solid var(--border-primary);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .glass-panel {
@@ -109,11 +87,8 @@ h1, h2, h3, h4, h5, h6 {
   transform-style: preserve-3d;
 }
 
-/* Cinematic Atmospheric Light */
+/* Cinematic Atmospheric Light Spotlights */
 .ambient-spotlight {
-  background: radial-gradient(circle 700px at 70% 30%, rgba(255, 255, 255, 0.7), transparent 80%);
-}
-.dark .ambient-spotlight {
   background: radial-gradient(circle 800px at 75% 25%, rgba(37, 99, 235, 0.15), transparent 75%);
 }
 
@@ -133,77 +108,46 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Premium Low-Key Buttons (Quiet CTA System) */
 .quiet-primary-btn {
-  background: #EFF6FF !important;
-  border: 1px solid #DBEAFE !important;
-  color: #2563EB !important;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.dark .quiet-primary-btn {
   background: rgba(37, 99, 235, 0.08) !important;
   border: 1px solid rgba(37, 99, 235, 0.18) !important;
   color: #3B82F6 !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .quiet-primary-btn:hover {
-  background: #DBEAFE !important;
-  border-color: #BFDBFE !important;
-  transform: translateY(-1px);
-}
-.dark .quiet-primary-btn:hover {
   background: rgba(37, 99, 235, 0.12) !important;
   border-color: rgba(37, 99, 235, 0.35) !important;
+  transform: translateY(-1px);
 }
 
 .quiet-secondary-btn {
-  background: #F8FAFC !important;
-  border: 1px solid #E2E8F0 !important;
-  color: #334155 !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.dark .quiet-secondary-btn {
   background: rgba(255, 255, 255, 0.02) !important;
   border: 1px solid var(--border-primary) !important;
   color: var(--text-secondary) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .quiet-secondary-btn:hover {
-  background: #F1F5F9 !important;
-  border-color: #CBD5E1 !important;
-  color: #0F172A !important;
-}
-.dark .quiet-secondary-btn:hover {
   background: rgba(255, 255, 255, 0.05) !important;
   border-color: var(--border-hover) !important;
   color: var(--text-primary) !important;
 }
 
-/* Bulletproof Art Direction Classes */
+/* Bulletproof Brand Art Direction Classes */
 .logo-card-container {
-  background: rgba(255, 255, 255, 0.35) !important;
-  border: 1px solid rgba(15, 23, 42, 0.05) !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.01) !important;
-}
-.dark .logo-card-container {
   background: rgba(255, 255, 255, 0.02) !important;
   border: 1px solid rgba(255, 255, 255, 0.04) !important;
   box-shadow: none !important;
 }
 
 .premium-card-gold {
-  background: linear-gradient(135deg, rgba(239, 246, 255, 0.55) 0%, rgba(224, 231, 255, 0.45) 100%) !important;
-  border: 1px solid rgba(191, 219, 254, 0.4) !important;
-  backdrop-filter: blur(10px);
-}
-.dark .premium-card-gold {
   background: rgba(0, 0, 0, 0.25) !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
 }
 
 .sidebar-link-active {
   background-color: #2563EB !important;
   color: #FFFFFF !important;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25) !important;
-}
-.dark .sidebar-link-active {
   box-shadow: 0 4px 24px rgba(37, 99, 235, 0.45) !important;
 }
 
@@ -268,21 +212,15 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid var(--border-primary);
   border-radius: 1.25rem;
   padding: 1.5rem;
-  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.04);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.dark .card-elevated {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .card-elevated:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.07);
-}
-.dark .card-elevated:hover {
   box-shadow: 0 8px 32px rgba(37, 99, 235, 0.14);
 }
 
-/* ─── BADGES ─────────────────────────────────────────────── */
+/* ─── ELO ACCURACY BADGES ─────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -292,33 +230,25 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.06em;
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
-  color: var(--primary);
-  border: 1px solid rgba(37, 99, 235, 0.15);
-}
-.dark .badge {
   background: rgba(37, 99, 235, 0.12);
   border-color: rgba(59, 130, 246, 0.2);
   color: #93C5FD;
 }
 .badge-green {
-  background: rgba(16, 185, 129, 0.08);
-  color: #059669;
+  color: #34D399; 
+  background: rgba(16, 185, 129, 0.1);
   border-color: rgba(16, 185, 129, 0.2);
 }
-.dark .badge-green { color: #34D399; background: rgba(16, 185, 129, 0.1); }
 .badge-amber {
-  background: rgba(245, 158, 11, 0.08);
-  color: #D97706;
+  color: #FCD34D; 
+  background: rgba(245, 158, 11, 0.1);
   border-color: rgba(245, 158, 11, 0.2);
 }
-.dark .badge-amber { color: #FCD34D; background: rgba(245, 158, 11, 0.1); }
 .badge-red {
-  background: rgba(239, 68, 68, 0.08);
-  color: #DC2626;
+  color: #FCA5A5; 
+  background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.2);
 }
-.dark .badge-red { color: #FCA5A5; background: rgba(239, 68, 68, 0.1); }
 
 /* ─── TABLE ROWS ─────────────────────────────────────────── */
 .table-header {
@@ -337,8 +267,7 @@ h1, h2, h3, h4, h5, h6 {
   transition: background-color 0.15s ease;
 }
 .table-row:last-child { border-bottom: none; }
-.table-row:hover { background: rgba(37, 99, 235, 0.03); }
-.dark .table-row:hover { background: rgba(255, 255, 255, 0.025); }
+.table-row:hover { background: rgba(255, 255, 255, 0.025); }
 
 /* ─── BUTTONS ────────────────────────────────────────────── */
 .btn-primary {
@@ -387,18 +316,12 @@ h1, h2, h3, h4, h5, h6 {
 .page-spot-tl {
   position: absolute; top: -80px; left: -80px;
   width: 480px; height: 480px;
-  background: radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%);
-  pointer-events: none; z-index: 0;
-}
-.dark .page-spot-tl {
   background: radial-gradient(circle, rgba(37,99,235,0.09) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
 }
 .page-spot-br {
   position: absolute; bottom: -80px; right: -80px;
   width: 380px; height: 380px;
-  background: radial-gradient(circle, rgba(99,102,241,0.05) 0%, transparent 70%);
-  pointer-events: none; z-index: 0;
-}
-.dark .page-spot-br {
   background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { Crown, Swords, Trophy, Users, User, LogOut, ChevronDown, Moon, Sun, Tv, Sparkles, ArrowRight, Globe } from 'lucide-react'
+import { Crown, Swords, Trophy, Users, User, LogOut, ChevronDown, Moon, Sun, Tv, Sparkles, ArrowRight, Globe, Bot, Lightbulb, BarChart2, Dices, History } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import AuthModal from './AuthModal'
 import { useTheme } from './ThemeProvider'
@@ -15,6 +15,7 @@ export default function Navbar() {
   const [profileOpen, setProfileOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const pathname = usePathname()
+  const [isPlayHovered, setIsPlayHovered] = useState(false)
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -26,7 +27,7 @@ export default function Navbar() {
 
   // Solid Colors active styling helper via highly robust static CSS classes
   const getLinkClass = (path: string) => {
-    const isActive = pathname === path
+    const isActive = path === '/' ? pathname === '/' : pathname?.startsWith(path)
     return `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
       isActive 
         ? 'sidebar-link-active' 
@@ -36,7 +37,7 @@ export default function Navbar() {
 
   return (
     <>
-      <aside className="sticky top-0 z-40 h-screen w-[260px] flex flex-col justify-between p-6 glass-sidebar transition-all duration-500 font-montserrat">
+      <aside className="sticky top-0 z-[60] h-screen w-[260px] flex flex-col justify-between p-6 glass-sidebar transition-all duration-500 font-montserrat">
         <div className="flex flex-col gap-10">
           
           {/* Logo beautifully wrapped in a premium brand background card */}
@@ -52,9 +53,99 @@ export default function Navbar() {
 
           {/* Sidebar Menu items using elegant Solid Colors active styling */}
           <div className="flex flex-col gap-1 font-medium text-[13.5px] text-[var(--text-secondary)] tracking-wide">
-            <Link href="/" className={getLinkClass('/')}>
-              <Swords className="w-4 h-4" /> Play
-            </Link>
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsPlayHovered(true)}
+              onMouseLeave={() => setIsPlayHovered(false)}
+            >
+              <Link href="/play" className={getLinkClass('/play')}>
+                <Swords className="w-4 h-4" /> Play
+              </Link>
+
+              {/* Flyout Submenu Panel */}
+              <div 
+                className={`absolute left-[238px] top-[-12px] w-[270px] rounded-2xl glass-panel p-3.5 z-[99] shadow-[var(--soft-shadow)] transition-all duration-300 flex flex-col gap-1 before:content-[''] before:absolute before:left-[-40px] before:top-0 before:w-[40px] before:h-full before:bg-transparent ${
+                  isPlayHovered 
+                    ? 'opacity-100 translate-x-0 pointer-events-auto' 
+                    : 'opacity-0 -translate-x-2 pointer-events-none'
+                }`}
+              >
+                <div className="px-2 pb-2 mb-1 border-b border-white/5 flex items-center justify-between">
+                  <span className="text-[10px] font-semibold tracking-wider text-[var(--text-muted)] uppercase">Arena Hub</span>
+                  <span className="flex items-center gap-1 text-[9px] text-[var(--primary)] font-semibold uppercase animate-pulse">● Live</span>
+                </div>
+                
+                <Link href="/play/online" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center transition-colors group-hover:bg-emerald-500 group-hover:text-white">
+                    <Globe className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-[var(--text-primary)]">Play Online</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">Real-time matchmaking ELO</span>
+                  </div>
+                </Link>
+
+                <Link href="/play/bots" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center transition-colors group-hover:bg-blue-500 group-hover:text-white">
+                    <Bot className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-[var(--text-primary)]">Play Bots</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">Challenge unique AI characters</span>
+                  </div>
+                </Link>
+
+                <Link href="/play/coach" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center transition-colors group-hover:bg-amber-500 group-hover:text-white">
+                    <Lightbulb className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-[var(--text-primary)]">Play Coach</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">Real-time dynamic AI guides</span>
+                  </div>
+                </Link>
+
+                <Link href="/play/stats" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center transition-colors group-hover:bg-purple-500 group-hover:text-white">
+                    <BarChart2 className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-[var(--text-primary)]">Stats</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">Check ELO progress & accuracy</span>
+                  </div>
+                </Link>
+
+                <Link href="/play/tournaments" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center transition-colors group-hover:bg-red-500 group-hover:text-white">
+                    <Trophy className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-[var(--text-primary)]">Tournaments</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">Swiss brackets and open arenas</span>
+                  </div>
+                </Link>
+
+                <Link href="/play/variants" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center transition-colors group-hover:bg-orange-500 group-hover:text-white">
+                    <Dices className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-[var(--text-primary)]">Variants</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">Fischer Random & custom modes</span>
+                  </div>
+                </Link>
+
+                <Link href="/play/history" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-500 flex items-center justify-center transition-colors group-hover:bg-teal-500 group-hover:text-white">
+                    <History className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-[var(--text-primary)]">Game History</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">Review and analyze past matches</span>
+                  </div>
+                </Link>
+              </div>
+            </div>
             <Link href="/puzzles" className={getLinkClass('/puzzles')}>
               <Trophy className="w-4 h-4" /> Puzzles
             </Link>
@@ -154,18 +245,11 @@ export default function Navbar() {
               <span className="text-[10px] font-light text-[var(--text-muted)] tracking-wider">100K Live</span>
             </div>
 
-            {/* Selector & Icon Toggle */}
+            {/* Language Selector */}
             <div className="flex items-center gap-3">
               <button className="flex items-center gap-1 text-[10px] font-light text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                 <Globe className="w-3.5 h-3.5 opacity-80" />
                 EN
-              </button>
-              <button 
-                onClick={toggleTheme}
-                className="w-8 h-8 rounded-full border border-[var(--border-primary)] bg-[var(--bg-surface)] hover:border-[var(--border-hover)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
-                title={mounted && theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                 {mounted && theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
               </button>
             </div>
           </div>

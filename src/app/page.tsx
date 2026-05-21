@@ -1,71 +1,143 @@
-import HeroChessBoard from "@/components/HeroChessBoard";
-import HeroBg from "@/components/HeroBg";
-import { Play, ChevronDown, Users } from "lucide-react";
-import Link from "next/link";
-import { Metadata } from "next";
+'use client'
 
-export const metadata: Metadata = {
-  title: "ChessOnline - Competitive Chess, Reimagined",
-  description: "Experience modern chess without distractions. Real-time gameplay, AI analysis, and a luxury digital interface.",
-};
+import { Chessboard } from "react-chessboard";
+import { Chess } from "chess.js";
+import { Bot, Swords, ChevronRight, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
+  const [fen, setFen] = useState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+  // Paul Morphy's legendary 1858 Opera Game - a fast, dramatic miniature ending in a brilliant rook mate!
+  const operaGameMoves = [
+    "e4", "e5", "Nf3", "d6", "d4", "Bg4", "dxe5", "Bxf3", "Qxf3", "dxe5", 
+    "Bc4", "Nf6", "Qb3", "Qe7", "Nc3", "c6", "Bg5", "b5", "Nxb5", "cxb5", 
+    "Bxb5+", "Nbd7", "O-O-O", "Rd8", "Rxd7", "Rxd7", "Rd1", "Qe6", 
+    "Bxd7+", "Nxd7", "Qb8+", "Nxb8", "Rd8#"
+  ];
+
+  useEffect(() => {
+    setMounted(true);
+
+    const activeGame = new Chess();
+    let index = 0;
+
+    const interval = setInterval(() => {
+      if (index >= operaGameMoves.length) {
+        activeGame.reset();
+        index = 0;
+      } else {
+        try {
+          activeGame.move(operaGameMoves[index]);
+          index++;
+        } catch {
+          activeGame.reset();
+          index = 0;
+        }
+      }
+      setFen(activeGame.fen());
+    }, 2200); // Smooth grandmaster pacing
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-[var(--bg-main)]">
+    <div className="relative w-full h-full min-h-screen flex items-center justify-center overflow-x-hidden overflow-y-auto py-10 lg:py-0 bg-[#04060A]">
       
-      {/* Client-side background image — swaps correctly based on theme */}
-      <HeroBg />
-
-      {/* Controlled Asymmetry: 12-Column Grid */}
-      <div className="max-w-[1350px] mx-auto w-full px-6 md:px-12 py-10 lg:py-0 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center relative z-10">
+      {/* ── SUBTLY VISIBLE HERO DARK BACKGROUND IMAGE ─────────────────── */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-[#04060A]">
+        {/* Cinematic dark image at low opacity so text readability remains 100% */}
+        <img 
+          src="/images/hero-dark.png" 
+          alt="Hero Background" 
+          className="w-full h-full object-cover opacity-[0.20] mix-blend-screen"
+        />
         
-        {/* Left Side: Hero Text & Buttons */}
-        <div className="lg:col-span-5 flex flex-col items-start space-y-4 order-first max-w-md lg:pr-4">
-          {/* Subtitle / Tag */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-[1.5px] bg-[#2563EB]/40"></div>
-            <span className="text-[10px] font-semibold tracking-[0.2em] text-[#2563EB] dark:text-blue-400">REAL-TIME CHESS</span>
+        {/* Soft, deep-blue and indigo ambient spotlights to blend image boundaries */}
+        <div className="absolute top-[15%] left-[15%] w-[600px] h-[600px] rounded-full bg-blue-600/[0.04] blur-[140px] animate-pulse" />
+        <div className="absolute bottom-[15%] right-[15%] w-[600px] h-[600px] rounded-full bg-indigo-600/[0.04] blur-[140px]" />
+      </div>
+
+      {/* Side-by-Side Flex Layout Container - responsive spacing */}
+      <div className="relative z-10 w-full max-w-[1300px] mx-auto px-4 sm:px-12 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-12 lg:gap-20">
+        
+        {/* ── LEFT: DYNAMIC AUTOPLAYING CHESSBOARD ─────────────────────── */}
+        <div className="w-[90vw] sm:w-[80vw] lg:w-full max-w-[500px] lg:max-w-[560px] aspect-square flex justify-center flex-shrink-0">
+          <div className="card-elevated !p-3 sm:!p-5 w-full h-full shadow-2xl relative border-white/5 bg-[#090D16]/65 backdrop-blur-md">
+            
+            {/* Ambient behind-board custom radial glow */}
+            <div className="absolute inset-0 bg-[var(--primary)]/[0.03] blur-3xl rounded-3xl pointer-events-none -z-10 animate-pulse" />
+
+            <div className="w-full h-full rounded-xl overflow-hidden shadow-inner border border-white/5">
+              {mounted && (
+                <Chessboard
+                  options={{
+                    position: fen,
+                    darkSquareStyle: { backgroundColor: "#2563EB" }, // Premium sapphire brand blue
+                    lightSquareStyle: { backgroundColor: "#EFF6FF" }, // Premium ivory light squares
+                    allowDragging: false,
+                    animationDurationInMs: 250,
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── RIGHT: LUXURY PLAY CONSOLE CARD ───────────────────────────── */}
+        <div className="w-full max-w-[480px] bg-[#090D16]/95 border border-white/[0.05] rounded-3xl p-6 sm:p-8 shadow-[0_30px_100px_rgba(0,0,0,0.85)] flex flex-col gap-6.5 relative overflow-hidden backdrop-blur-xl flex-shrink-0">
+          
+          {/* Subtle top edge indigo light leak for premium touch */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-blue-500/0 via-blue-500/30 to-blue-500/0" />
+
+          {/* Header Title */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold tracking-[0.25em] text-[var(--primary)] uppercase flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full border border-[var(--primary)]/10">
+                <Sparkles className="w-3.5 h-3.5 text-[var(--primary)] animate-pulse" /> Distraction-Free Arena
+              </span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-medium font-jost leading-[1.08] tracking-tight text-[var(--text-primary)]">
+              Play Chess Online<br />
+              in <span className="text-[var(--primary)] font-extrabold bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">Absolute Luxury.</span>
+            </h1>
+
+            <p className="text-[12.5px] text-[var(--text-secondary)] leading-relaxed font-light mt-1">
+              Step into an elite digital chess salon. Optimized for strategic focus, ChessOnline hosts ELO matchmaking, advanced Stockfish sandbox play, and grandmaster analytical tools inside a pristine, distraction-free environment.
+            </p>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-jost font-medium tracking-tight text-[var(--text-primary)] leading-[1.08]">
-            Play chess online<br />
-            <span className="text-[#2563EB] font-semibold">without distractions.</span>
-          </h1>
-
-          <p className="text-sm sm:text-base text-[var(--text-secondary)] font-normal leading-relaxed max-w-[390px] pt-1">
-            Experience a refined, quiet digital environment built for the pure game. Real-time matches, elite puzzles, and zero clutter.
-          </p>
-
-          {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-3 font-montserrat w-full sm:w-auto">
-            <Link
+          {/* Premium Play CTAs */}
+          <div className="flex flex-col gap-3.5">
+            
+            {/* Main Action Blue Steel Button */}
+            <Link 
               href="/play"
-              className="bg-[#2563EB] hover:bg-blue-700 text-white font-medium text-xs px-6 py-3.5 rounded-xl border border-blue-600 transition-all shadow-[0_4px_16px_rgba(37,99,235,0.25)] flex items-center justify-center gap-2.5 w-full sm:w-[170px]"
+              className="group w-full py-4 rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 hover:from-blue-600 hover:to-indigo-500 hover:scale-[1.01] transition-all shadow-[0_6px_28px_rgba(37,99,235,0.35)] border border-blue-500/30 cursor-pointer flex items-center justify-center gap-3 relative overflow-hidden"
             >
-              <Play className="w-3.5 h-3.5 fill-current" /> Play Now
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              
+              <Swords className="w-4.5 h-4.5 text-white animate-pulse" />
+              <span className="text-sm font-bold text-white tracking-wider font-jost">Enter Play Arena</span>
+              <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link
-              href="/play/local"
-              className="bg-white dark:bg-black/[0.15] hover:bg-slate-50 dark:hover:bg-black/[0.25] border border-[var(--border-primary)] text-[var(--text-primary)] font-medium text-xs px-6 py-3.5 rounded-xl transition-all flex items-center justify-center gap-2.5 w-full sm:w-[170px]"
+
+            {/* Play Computer Translucent Card */}
+            <Link 
+              href="/play/bots"
+              className="group w-full py-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] hover:scale-[1.01] transition-all border border-white/5 hover:border-[var(--primary)]/20 cursor-pointer flex items-center justify-center gap-2.5 text-xs font-semibold text-[var(--text-primary)] shadow-sm"
             >
-              <Users className="w-3.5 h-3.5 text-[#2563EB]" /> Invite a Friend
+              <Bot className="w-4 h-4 text-[var(--primary)]" />
+              <span>Offline Practice vs Bots</span>
             </Link>
           </div>
-        </div>
 
-        {/* Right Side: The Rotated 3D Board Panel */}
-        <div className="lg:col-span-7 flex justify-center lg:justify-end w-full relative order-last lg:pl-10">
-          <HeroChessBoard />
         </div>
 
       </div>
-
-      {/* Faint Bottom Scroll Indicator */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 opacity-45 pointer-events-none hidden md:flex">
-        <ChevronDown className="w-3.5 h-3.5 text-[var(--text-muted)] animate-bounce" />
-        <span className="text-[8px] font-light tracking-[0.25em] text-[var(--text-muted)] uppercase">Scroll to explore</span>
-      </div>
-
     </div>
   );
 }
