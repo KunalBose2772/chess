@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { Crown, Swords, Trophy, Users, User, LogOut, ChevronDown, Moon, Sun, Tv, Sparkles, ArrowRight, Globe, Bot, Lightbulb, BarChart2, Dices, History } from 'lucide-react'
+import { Crown, Swords, Trophy, Users, User, LogOut, ChevronDown, Moon, Sun, Tv, Sparkles, ArrowRight, Globe, Bot, Lightbulb, BarChart2, Dices, History, Menu, X } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import AuthModal from './AuthModal'
 import { useTheme } from './ThemeProvider'
@@ -16,6 +16,7 @@ export default function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const pathname = usePathname()
   const [isPlayHovered, setIsPlayHovered] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -37,19 +38,103 @@ export default function Navbar() {
 
   return (
     <>
-      <aside className="sticky top-0 z-[60] h-screen w-[260px] flex flex-col justify-between p-6 glass-sidebar transition-all duration-500 font-montserrat">
-        <div className="flex flex-col gap-10">
-          
-          {/* Logo beautifully wrapped in a premium brand background card */}
-          <Link href="/" className="w-full flex items-center justify-center group pl-1">
-            <div className="flex items-center justify-center px-4 py-3 rounded-xl logo-card-container w-full transition-all">
-              {mounted && theme === 'light' ? (
-                 <img src="/images/logo-light.png" alt="ChessOnline Logo" className="w-[160px] h-auto object-contain opacity-95 transition-opacity" />
-              ) : (
-                 <img src="/images/logo-dark.png" alt="ChessOnline Logo" className="w-[160px] h-auto object-contain opacity-95 transition-opacity" />
+      {/* Mobile Top Header */}
+      <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#080C16] border-b border-white/[0.08] sticky top-0 z-50 w-full h-14 font-montserrat">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <Link href="/">
+            {mounted && theme === 'light' ? (
+              <img src="/images/logo-light.png" alt="ChessOnline Logo" className="w-[120px] h-auto object-contain" />
+            ) : (
+              <img src="/images/logo-dark.png" alt="ChessOnline Logo" className="w-[120px] h-auto object-contain" />
+            )}
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {!user ? (
+            <>
+              <Link
+                href="/register"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer"
+              >
+                Sign Up
+              </Link>
+              <button
+                onClick={() => openAuth('signin')}
+                className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer"
+              >
+                Log In
+              </button>
+            </>
+          ) : (
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+              >
+                <div className="w-6 h-6 bg-[var(--primary)] rounded-md flex items-center justify-center font-bold text-[10px] text-[#FFFFFF]">
+                  {user.username[0].toUpperCase()}
+                </div>
+                <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" />
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 top-full mt-2 w-40 bg-[#080C16] border border-white/[0.08] rounded-xl overflow-hidden z-50 shadow-2xl">
+                  <Link
+                    href={`/profile/${user.username}`}
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-[var(--text-secondary)] hover:bg-white/5 transition-colors w-full text-left cursor-pointer"
+                  >
+                    <User className="w-3.5 h-3.5" /> My Profile
+                  </Link>
+                  <button
+                    onClick={() => { signOut(); setProfileOpen(false) }}
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-red-500 hover:bg-red-500/10 transition-colors w-full text-left border-t border-white/5 cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" /> Sign Out
+                  </button>
+                </div>
               )}
             </div>
-          </Link>
+          )}
+        </div>
+      </header>
+
+      {/* Backdrop overlay for mobile menu drawer */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-[65] bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Drawer */}
+      <aside className={`fixed inset-y-0 left-0 z-[70] h-screen w-[260px] flex flex-col justify-between p-6 glass-sidebar transition-transform duration-300 font-montserrat lg:translate-x-0 lg:static lg:z-[60] lg:flex ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex flex-col gap-10">
+          
+          {/* Logo with Close Button inside sidebar header */}
+          <div className="flex items-center justify-between w-full gap-2">
+            <Link href="/" className="flex-1 flex items-center justify-center group pl-1" onClick={() => setIsMobileMenuOpen(false)}>
+              <div className="flex items-center justify-center px-4 py-3 rounded-xl logo-card-container w-full transition-all">
+                {mounted && theme === 'light' ? (
+                   <img src="/images/logo-light.png" alt="ChessOnline Logo" className="w-[160px] h-auto object-contain opacity-95 transition-opacity" />
+                ) : (
+                   <img src="/images/logo-dark.png" alt="ChessOnline Logo" className="w-[160px] h-auto object-contain opacity-95 transition-opacity" />
+                )}
+              </div>
+            </Link>
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
           {/* Sidebar Menu items using elegant Solid Colors active styling */}
           <div className="flex flex-col gap-1 font-medium text-[13.5px] text-[var(--text-secondary)] tracking-wide">
@@ -58,13 +143,13 @@ export default function Navbar() {
               onMouseEnter={() => setIsPlayHovered(true)}
               onMouseLeave={() => setIsPlayHovered(false)}
             >
-              <Link href="/play" className={getLinkClass('/play')}>
+              <Link href="/play" className={getLinkClass('/play')} onClick={() => setIsMobileMenuOpen(false)}>
                 <Swords className="w-4 h-4" /> Play
               </Link>
 
-              {/* Flyout Submenu Panel - Stretched and stuck flush to sidebar */}
+              {/* Flyout Submenu Panel - Stretched and stuck flush to sidebar (Desktop Only) */}
               <div 
-                className={`absolute left-[236px] top-[-12px] w-[270px] rounded-r-2xl rounded-l-none bg-[#080C16] p-3.5 z-[99] shadow-[10px_20px_50px_rgba(0,0,0,0.6)] border border-l-0 border-white/[0.08] transition-all duration-300 flex flex-col gap-1 before:content-[''] before:absolute before:left-[-40px] before:top-0 before:w-[40px] before:h-full before:bg-transparent ${
+                className={`hidden lg:flex absolute left-[236px] top-[-12px] w-[270px] rounded-r-2xl rounded-l-none bg-[#080C16] p-3.5 z-[99] shadow-[10px_20px_50px_rgba(0,0,0,0.6)] border border-l-0 border-white/[0.08] transition-all duration-300 flex-col gap-1 before:content-[''] before:absolute before:left-[-40px] before:top-0 before:w-[40px] before:h-full before:bg-transparent ${
                   isPlayHovered 
                     ? 'opacity-100 translate-x-0 pointer-events-auto' 
                     : 'opacity-0 -translate-x-2 pointer-events-none'
@@ -75,7 +160,7 @@ export default function Navbar() {
                   <span className="flex items-center gap-1 text-[9px] text-[var(--primary)] font-semibold uppercase animate-pulse">● Live</span>
                 </div>
                 
-                <Link href="/play/online" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                <Link href="/play/online" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center transition-colors group-hover:bg-emerald-500 group-hover:text-white">
                     <Globe className="w-4.5 h-4.5" />
                   </div>
@@ -85,7 +170,7 @@ export default function Navbar() {
                   </div>
                 </Link>
 
-                <Link href="/play/bots" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                <Link href="/play/bots" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center transition-colors group-hover:bg-blue-500 group-hover:text-white">
                     <Bot className="w-4.5 h-4.5" />
                   </div>
@@ -95,7 +180,7 @@ export default function Navbar() {
                   </div>
                 </Link>
 
-                <Link href="/play/coach" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                <Link href="/play/coach" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center transition-colors group-hover:bg-amber-500 group-hover:text-white">
                     <Lightbulb className="w-4.5 h-4.5" />
                   </div>
@@ -105,7 +190,7 @@ export default function Navbar() {
                   </div>
                 </Link>
 
-                <Link href="/play/stats" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                <Link href="/play/stats" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center transition-colors group-hover:bg-purple-500 group-hover:text-white">
                     <BarChart2 className="w-4.5 h-4.5" />
                   </div>
@@ -115,7 +200,7 @@ export default function Navbar() {
                   </div>
                 </Link>
 
-                <Link href="/play/tournaments" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                <Link href="/play/tournaments" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center transition-colors group-hover:bg-red-500 group-hover:text-white">
                     <Trophy className="w-4.5 h-4.5" />
                   </div>
@@ -125,7 +210,7 @@ export default function Navbar() {
                   </div>
                 </Link>
 
-                <Link href="/play/variants" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                <Link href="/play/variants" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center transition-colors group-hover:bg-orange-500 group-hover:text-white">
                     <Dices className="w-4.5 h-4.5" />
                   </div>
@@ -135,7 +220,7 @@ export default function Navbar() {
                   </div>
                 </Link>
 
-                <Link href="/play/history" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group">
+                <Link href="/play/history" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-500 flex items-center justify-center transition-colors group-hover:bg-teal-500 group-hover:text-white">
                     <History className="w-4.5 h-4.5" />
                   </div>
@@ -146,19 +231,20 @@ export default function Navbar() {
                 </Link>
               </div>
             </div>
-            <Link href="/puzzles" className={getLinkClass('/puzzles')}>
+            
+            <Link href="/puzzles" className={getLinkClass('/puzzles')} onClick={() => setIsMobileMenuOpen(false)}>
               <Trophy className="w-4 h-4" /> Puzzles
             </Link>
-            <Link href="/leaderboard" className={getLinkClass('/leaderboard')}>
+            <Link href="/leaderboard" className={getLinkClass('/leaderboard')} onClick={() => setIsMobileMenuOpen(false)}>
               <Users className="w-4 h-4" /> Leaderboard
             </Link>
-            <Link href="/learn" className={getLinkClass('/learn')}>
+            <Link href="/learn" className={getLinkClass('/learn')} onClick={() => setIsMobileMenuOpen(false)}>
               <Crown className="w-4 h-4" /> Learn
             </Link>
-            <Link href="/watch" className={getLinkClass('/watch')}>
+            <Link href="/watch" className={getLinkClass('/watch')} onClick={() => setIsMobileMenuOpen(false)}>
               <Tv className="w-4 h-4" /> Watch
             </Link>
-            <Link href="/community" className={getLinkClass('/community')}>
+            <Link href="/community" className={getLinkClass('/community')} onClick={() => setIsMobileMenuOpen(false)}>
               <Users className="w-4 h-4" /> Community
             </Link>
           </div>
@@ -184,14 +270,15 @@ export default function Navbar() {
           {/* Quiet Auth Buttons (Inside Sidebar for logged-out players) */}
           {!user && (
             <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
-              <button
-                onClick={() => openAuth('signup')}
-                className="quiet-primary-btn w-full px-4 py-2.5 rounded-xl text-xs font-medium tracking-wide flex justify-center items-center cursor-pointer"
+              <Link
+                href="/register"
+                className="quiet-primary-btn w-full px-4 py-2.5 rounded-xl text-xs font-medium tracking-wide flex justify-center items-center cursor-pointer text-center"
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 Sign Up
-              </button>
+              </Link>
               <button
-                onClick={() => openAuth('signin')}
+                onClick={() => { openAuth('signin'); setIsMobileMenuOpen(false); }}
                 className="quiet-secondary-btn w-full px-4 py-2.5 rounded-xl text-xs font-medium tracking-wide flex justify-center items-center cursor-pointer"
               >
                 Sign In
@@ -203,7 +290,7 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="w-full flex items-center justify-between glass-panel px-4 py-2.5 rounded-xl hover:border-[var(--border-hover)] transition-all"
+                className="w-full flex items-center justify-between glass-panel px-4 py-2.5 rounded-xl hover:border-[var(--border-hover)] transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-[var(--primary)] rounded-lg flex items-center justify-center font-bold text-xs text-[#FFFFFF]">
@@ -221,14 +308,14 @@ export default function Navbar() {
                 <div className="absolute left-0 bottom-full mb-2 w-full glass-panel rounded-xl overflow-hidden z-50 shadow-[var(--soft-shadow)]">
                   <Link
                     href={`/profile/${user.username}`}
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                    onClick={() => { setProfileOpen(false); setIsMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-2.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
                   >
                     <User className="w-3.5 h-3.5" /> My Profile
                   </Link>
                   <button
-                    onClick={() => { signOut(); setProfileOpen(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-red-500 hover:bg-red-500/10 transition-colors"
+                    onClick={() => { signOut(); setProfileOpen(false); setIsMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" /> Sign Out
                   </button>
@@ -247,7 +334,7 @@ export default function Navbar() {
 
             {/* Language Selector */}
             <div className="flex items-center gap-3">
-              <button className="flex items-center gap-1 text-[10px] font-light text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+              <button className="flex items-center gap-1 text-[10px] font-light text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer">
                 <Globe className="w-3.5 h-3.5 opacity-80" />
                 EN
               </button>
@@ -260,3 +347,4 @@ export default function Navbar() {
     </>
   )
 }
+

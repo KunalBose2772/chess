@@ -3,8 +3,7 @@
 import { Chessboard } from "react-chessboard";
 import { Chess, Move, Square } from "chess.js";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Bot, RotateCcw, Swords, MessageSquare, Zap, Cpu, Sparkles, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { Bot, RotateCcw, Swords, MessageSquare, Zap, Cpu, ChevronRight } from "lucide-react";
 
 interface BotPersonality {
   id: string;
@@ -103,6 +102,131 @@ export default function PlayBotsPage() {
   const movesRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
+  // Stateful Web Audio Engine for zero-latency tactile sound
+  const [audioCtx, setAudioCtx] = useState<AudioContext | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Initialize and bind active AudioContext on page load
+  useEffect(() => {
+    const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioCtxClass) {
+      const ctx = new AudioCtxClass();
+      setAudioCtx(ctx);
+      audioCtxRef.current = ctx;
+
+      // Unblock browser sound policy on first gesture
+      const unlockAudio = () => {
+        if (ctx.state === "suspended") {
+          ctx.resume().then(() => {
+            console.log("Bots Arena Audio engaged.");
+          });
+        }
+        window.removeEventListener("click", unlockAudio);
+        window.removeEventListener("mouseenter", unlockAudio);
+        window.removeEventListener("touchstart", unlockAudio);
+      };
+
+      window.addEventListener("click", unlockAudio);
+      window.addEventListener("mouseenter", unlockAudio);
+      window.addEventListener("touchstart", unlockAudio);
+
+      return () => {
+        window.removeEventListener("click", unlockAudio);
+        window.removeEventListener("mouseenter", unlockAudio);
+        window.removeEventListener("touchstart", unlockAudio);
+      };
+    }
+  }, []);
+
+  // ── SOUND SYNTHESIS METHODS ─────────────────────────────────────────
+  
+  // Standard resonant wood click/tap
+  const playChessMoveSound = () => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    try {
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+      
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(320, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.12);
+      
+      gainNode.gain.setValueAtTime(0.35, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {
+      console.log("Audio tap error", e);
+    }
+  };
+
+  // Tactical sharper slide/capture sound
+  const playChessCaptureSound = () => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    try {
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+      
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(420, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.16);
+      
+      gainNode.gain.setValueAtTime(0.38, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
+      
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.16);
+    } catch (e) {
+      console.log("Audio capture error", e);
+    }
+  };
+
+  // Crystalline chime for checks/checkmates
+  const playChessCheckSound = () => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    try {
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+      
+      const playTone = (freq: number, dur: number) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.12, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + dur);
+      };
+      
+      playTone(450, 0.2);
+      playTone(550, 0.2);
+    } catch (e) {
+      console.log("Audio check error", e);
+    }
+  };
+
   // Initialize bot chat
   useEffect(() => {
     setBotChat([selectedBot.intro]);
@@ -123,6 +247,16 @@ export default function PlayBotsPage() {
         const newGame = new Chess(game.fen());
         setGame(newGame);
         setMoveHistory(prev => [...prev, result.san]);
+
+        // Synthesize dynamic live audio
+        if (newGame.isCheck() || newGame.isGameOver()) {
+          playChessCheckSound();
+        } else if (isCaptureMove) {
+          playChessCaptureSound();
+        } else {
+          playChessMoveSound();
+        }
+
         setTimeout(() => {
           movesRef.current?.scrollTo({ top: movesRef.current.scrollHeight, behavior: 'smooth' });
         }, 50);
@@ -131,7 +265,6 @@ export default function PlayBotsPage() {
         if (newGame.isGameOver()) {
           if (newGame.isCheckmate()) {
             if (newGame.turn() === "w") {
-              // Bot won (since turn is w, it means black just mated w, wait, turn is next turn so if bot is black and it mated white, next turn is w)
               setGameResult("Black Wins");
               addBotComment(selectedBot.winComment);
             } else {
@@ -184,7 +317,6 @@ export default function PlayBotsPage() {
               
               if (success) {
                 const updatedGame = new Chess(game.fen()); // Refetched after makeMove
-                // Dynamic Bot commentary after their move
                 if (updatedGame.isGameOver()) {
                   // Handled inside makeMove
                 } else if (updatedGame.isCheck()) {
@@ -265,6 +397,7 @@ export default function PlayBotsPage() {
   };
 
   const resetGame = () => {
+    playChessMoveSound();
     setGame(new Chess());
     setMoveHistory([]);
     setGameResult(null);
@@ -274,6 +407,7 @@ export default function PlayBotsPage() {
   };
 
   const selectBot = (bot: BotPersonality) => {
+    playChessMoveSound();
     setSelectedBot(bot);
     setGame(new Chess());
     setMoveHistory([]);
@@ -292,66 +426,32 @@ export default function PlayBotsPage() {
   return (
     <div className="w-full h-full flex flex-col lg:flex-row overflow-hidden bg-[var(--bg-main)]">
       
-      {/* ── CHESSBOARD COLUMN ────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col gap-2 p-3 sm:p-4 min-h-0 overflow-hidden">
+      {/* ── GIANT, CENTERED CHESSBOARD COLUMN (Maximized space matching Home Screen) ── */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-10 min-h-0 overflow-hidden relative">
         
-        {/* Active Bot Bar */}
-        <div className={`card-surface !py-2.5 !px-4 flex items-center justify-between border-t-2 ${selectedBot.borderColor}`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl ${selectedBot.colorClass} flex items-center justify-center text-lg font-bold flex-shrink-0 shadow-sm border border-white/5`}>
-              {selectedBot.avatar}
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
-                {selectedBot.name} 
-                <span className="text-[10px] bg-[var(--primary)]/10 text-[var(--primary)] font-semibold px-2 py-0.5 rounded-lg border border-[var(--primary)]/10">⚡ {selectedBot.rating}</span>
-              </p>
-              <p className="text-[10px] text-[var(--text-muted)] italic font-light truncate max-w-[150px] sm:max-w-none">
-                "{selectedBot.description}"
-              </p>
-            </div>
-          </div>
+        {/* Ambient custom radial glow behind the board */}
+        <div className="absolute inset-0 bg-[var(--primary)]/[0.02] blur-[100px] rounded-3xl pointer-events-none -z-10 animate-pulse" />
 
-          <div className="flex items-center gap-2">
-            {isBotThinking && (
-              <span className="text-[10px] font-semibold text-[var(--primary)] animate-pulse flex items-center gap-1">
-                <Cpu className="w-3.5 h-3.5 animate-spin" /> Thinking…
-              </span>
-            )}
-            {!gameResult && !isBotThinking && (
-              <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg ${
-                game.turn() === 'b'
-                  ? 'bg-[var(--primary)]/10 text-[var(--primary)] animate-pulse'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
-              }`}>
-                {game.turn() === 'b' ? '⏳ Bot Turn' : ''}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Board Result Banner */}
+        {/* Dynamic Board Result Banner Overlay */}
         {gameResult && (
-          <div className="card-elevated !py-3 text-center !border-emerald-500/25 bg-emerald-500/[0.03]">
-            <p className="font-semibold text-[var(--text-primary)] text-sm">
-              🏁 Game Over! Result: <span className="text-[var(--primary)] font-bold">{gameResult}</span>
-            </p>
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 px-6 py-2.5 rounded-2xl border border-emerald-500/30 bg-[#090D16]/95 backdrop-blur-md shadow-2xl flex items-center gap-4">
+            <span className="font-semibold text-[var(--text-primary)] text-xs">
+              🏁 Game Over: <span className="text-[var(--primary)] font-bold">{gameResult}</span>
+            </span>
             <button
               onClick={resetGame}
-              className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-[var(--primary)] hover:underline font-semibold"
+              className="inline-flex items-center gap-1.5 text-xs text-[var(--primary)] hover:underline font-semibold cursor-pointer"
             >
-              <RotateCcw className="w-3 h-3" /> Play {selectedBot.name} again
+              <RotateCcw className="w-3.5 h-3.5" /> Play Again
             </button>
           </div>
         )}
 
-        {/* Chessboard container */}
-        <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden p-1">
-          <div
-            className="card-elevated !p-2 sm:!p-3"
-            style={{ height: '100%', aspectRatio: '1 / 1', maxWidth: '100%' }}
-          >
-            <div className="w-full h-full rounded-xl overflow-hidden shadow-inner">
+        {/* Board Aspect-Ratio Restricting Wrapper */}
+        <div className="w-full h-full max-w-[620px] max-h-[620px] aspect-square flex justify-center items-center">
+          <div className="card-elevated !p-3.5 sm:!p-5 w-full h-full shadow-2xl relative border-white/5 bg-[#090D16]/65 backdrop-blur-md">
+            
+            <div className="w-full h-full rounded-xl overflow-hidden shadow-inner border border-white/5">
               <Chessboard
                 options={{
                   position: game.fen(),
@@ -359,8 +459,8 @@ export default function PlayBotsPage() {
                     onDrop(sourceSquare, targetSquare, piece),
                   onSquareClick: handleSquareClick as never,
                   squareStyles: optionSquares,
-                  darkSquareStyle: { backgroundColor: "#2563EB" },
-                  lightSquareStyle: { backgroundColor: "#EFF6FF" },
+                  darkSquareStyle: { backgroundColor: "#2563EB" }, // Premium sapphire blue
+                  lightSquareStyle: { backgroundColor: "#EFF6FF" }, // Premium ivory light squares
                   animationDurationInMs: 150,
                   allowDragging: !gameResult && game.turn() === "w",
                 }}
@@ -368,61 +468,88 @@ export default function PlayBotsPage() {
             </div>
           </div>
         </div>
-
-        {/* Player Bar */}
-        <div className="card-surface !py-2.5 !px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[var(--primary)] flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-md">
-              👤
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-[var(--text-primary)]">You</p>
-              <p className="text-[10px] text-[var(--text-muted)]">White Player</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {!gameResult && (
-              <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg ${
-                game.turn() === 'w'
-                  ? 'bg-[var(--primary)]/10 text-[var(--primary)]'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
-              }`}>
-                {game.turn() === 'w' ? '✓ Your turn' : ''}
-              </span>
-            )}
-            <button
-              onClick={resetGame}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-[var(--border-primary)] bg-[var(--bg-secondary)]/50 text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all flex-shrink-0 cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Reset
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* ── SIDE PANEL (BOT SELECTOR & COMMENTARY) ───────────────────────── */}
-      <div className="w-full lg:w-80 xl:w-96 flex flex-col border-t lg:border-t-0 lg:border-l border-[var(--border-primary)] min-h-0">
+      {/* ── CONSOLIDATED CONTROL DECK (RIGHT SIDEBAR) ─────────────────── */}
+      <div className="w-full lg:w-85 xl:w-96 flex flex-col border-t lg:border-t-0 lg:border-l border-[var(--border-primary)] min-h-0 bg-[#090D16]/50 backdrop-blur-sm flex-shrink-0">
         
-        {/* Selector Header */}
+        {/* ── MATCH DASHBOARD PANEL (Repositioned Players Console) ──────── */}
+        <div className="p-4 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]/25 flex flex-col gap-3">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider font-mono">Current Match</span>
+          
+          <div className="flex flex-col gap-2">
+            {/* Opponent Bot Profile block */}
+            <div className={`flex items-center justify-between p-2.5 rounded-xl border bg-[#080C16]/90 ${selectedBot.borderColor}`}>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-lg ${selectedBot.colorClass} flex items-center justify-center text-sm font-semibold`}>
+                  {selectedBot.avatar}
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-[var(--text-primary)] block leading-snug">{selectedBot.name}</span>
+                  <span className="text-[9px] text-[var(--text-muted)]">Opponent • ELO {selectedBot.rating}</span>
+                </div>
+              </div>
+              <div>
+                {isBotThinking ? (
+                  <span className="text-[9px] bg-blue-500/10 text-blue-400 font-semibold px-2 py-0.5 rounded-lg border border-blue-500/20 animate-pulse flex items-center gap-1">
+                    <Cpu className="w-2.5 h-2.5 animate-spin" /> thinking...
+                  </span>
+                ) : game.turn() === 'b' && !gameResult ? (
+                  <span className="text-[9px] bg-[var(--primary)]/10 text-[var(--primary)] font-semibold px-2 py-0.5 rounded-lg border border-[var(--primary)]/20 animate-pulse">Their Turn</span>
+                ) : (
+                  <span className="text-[9px] text-slate-500 font-medium">Waiting</span>
+                )}
+              </div>
+            </div>
+
+            {/* White Player Profile block */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl border border-white/5 bg-[#080C16]/90">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[var(--primary)] flex items-center justify-center text-xs font-bold text-white">
+                  👤
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-[var(--text-primary)] block leading-snug">You</span>
+                  <span className="text-[9px] text-[var(--text-muted)]">White Player</span>
+                </div>
+              </div>
+              <div>
+                {game.turn() === 'w' && !gameResult && !isBotThinking ? (
+                  <span className="text-[9px] bg-emerald-500/10 text-emerald-400 font-semibold px-2 py-0.5 rounded-lg border border-emerald-500/20 animate-pulse">Your Turn</span>
+                ) : (
+                  <span className="text-[9px] text-slate-500 font-medium">Waiting</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick console action reset */}
+          <button
+            onClick={resetGame}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold border border-[var(--border-primary)] bg-[var(--bg-secondary)]/50 text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all cursor-pointer shadow-sm"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Reset Board
+          </button>
+        </div>
+
+        {/* ── BOT SELECTOR LIST ── */}
         <div className="p-4 border-b border-[var(--border-primary)] flex-shrink-0 flex items-center gap-2">
           <Bot className="w-4 h-4 text-[var(--primary)]" />
           <span className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider font-jost">Select AI Opponent</span>
         </div>
-
-        {/* Bot selector grid */}
-        <div className="p-4 flex flex-col gap-2.5 border-b border-[var(--border-primary)] overflow-y-auto max-h-[220px] lg:max-h-[300px] flex-shrink-0">
+ 
+        <div className="p-4 flex flex-col gap-2 border-b border-[var(--border-primary)] overflow-y-auto max-h-[180px] lg:max-h-[220px] flex-shrink-0">
           {BOTS.map((bot) => (
             <button
               key={bot.id}
               onClick={() => selectBot(bot)}
-              className={`flex items-center justify-between p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+              className={`flex items-center justify-between p-2 rounded-xl text-left border transition-all cursor-pointer ${
                 selectedBot.id === bot.id
                   ? 'bg-[var(--primary)]/5 border-[var(--primary)] shadow-sm'
                   : 'border-[var(--border-primary)] bg-[var(--bg-secondary)]/10 hover:border-[var(--border-hover)]'
               }`}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-lg ${bot.colorClass} flex items-center justify-center text-sm font-semibold`}>
                   {bot.avatar}
                 </div>
@@ -436,10 +563,10 @@ export default function PlayBotsPage() {
           ))}
         </div>
 
-        {/* Active Tabs (Bot Comments / Moves) */}
+        {/* ── BOT CHAT & MOVES SPLIT PANEL ── */}
         <div className="flex-1 flex flex-col min-h-0 bg-[var(--bg-secondary)]/[0.15]">
           
-          {/* Bot Commentary Chat */}
+          {/* Bot commentary */}
           <div className="flex-1 flex flex-col min-h-0 border-b border-[var(--border-primary)]">
             <div className="px-4 py-2 border-b border-[var(--border-primary)] flex items-center gap-2 bg-[var(--bg-secondary)]/30">
               <MessageSquare className="w-3.5 h-3.5 text-[var(--primary)]" />

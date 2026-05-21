@@ -30,11 +30,11 @@ export default function RootLayout({
       className={`${jost.variable} ${montserrat.variable} dark antialiased h-full overflow-hidden`}
       suppressHydrationWarning
     >
-        <body className="h-full flex flex-row font-montserrat selection:bg-primary/30 transition-colors duration-300 overflow-hidden">
+        <body className="h-full flex flex-col lg:flex-row font-montserrat selection:bg-primary/30 transition-colors duration-300 overflow-hidden">
           <ThemeProvider>
             <AuthProvider>
               <Navbar />
-              <main className="flex-1 flex flex-col min-w-0 overflow-y-auto h-full relative transition-colors duration-300">
+              <main className="flex-1 flex flex-col min-w-0 overflow-y-auto relative transition-colors duration-300">
                 {children}
               </main>
             </AuthProvider>
