@@ -62,9 +62,9 @@ export default function Navbar() {
                 <Swords className="w-4 h-4" /> Play
               </Link>
 
-              {/* Flyout Submenu Panel */}
+              {/* Flyout Submenu Panel - Stretched and stuck flush to sidebar */}
               <div 
-                className={`absolute left-[238px] top-[-12px] w-[270px] rounded-2xl glass-panel p-3.5 z-[99] shadow-[var(--soft-shadow)] transition-all duration-300 flex flex-col gap-1 before:content-[''] before:absolute before:left-[-40px] before:top-0 before:w-[40px] before:h-full before:bg-transparent ${
+                className={`absolute left-[236px] top-[-12px] w-[270px] rounded-r-2xl rounded-l-none bg-[#080C16] p-3.5 z-[99] shadow-[10px_20px_50px_rgba(0,0,0,0.6)] border border-l-0 border-white/[0.08] transition-all duration-300 flex flex-col gap-1 before:content-[''] before:absolute before:left-[-40px] before:top-0 before:w-[40px] before:h-full before:bg-transparent ${
                   isPlayHovered 
                     ? 'opacity-100 translate-x-0 pointer-events-auto' 
                     : 'opacity-0 -translate-x-2 pointer-events-none'
