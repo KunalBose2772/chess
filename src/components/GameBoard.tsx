@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth'
 import { MessageSquare, RotateCcw, Flag, Clock, Send, Zap } from 'lucide-react'
 import Link from 'next/link'
+import { useBoardTheme } from '@/components/BoardThemeProvider'
 
 interface Move {
   san: string
@@ -83,6 +84,7 @@ export default function GameBoard({
   blackPlayer,
   initialFen,
 }: GameBoardProps) {
+  const { boardTheme } = useBoardTheme()
   const { user } = useAuthStore()
   const [game, setGame] = useState(new Chess(initialFen))
   const [moveHistory, setMoveHistory] = useState<Move[]>([])
@@ -320,8 +322,8 @@ export default function GameBoard({
                   position: game.fen(),
                   boardOrientation: playerColor,
                   onPieceDrop: onPieceDrop,
-                  darkSquareStyle: { backgroundColor: '#2563EB' },
-                  lightSquareStyle: { backgroundColor: '#EFF6FF' },
+                  darkSquareStyle: { backgroundColor: boardTheme.dark },
+                  lightSquareStyle: { backgroundColor: boardTheme.light },
                   animationDurationInMs: 150,
                   allowDragging: !gameResult,
                 }}

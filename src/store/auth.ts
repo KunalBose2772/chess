@@ -21,7 +21,10 @@ export interface UserProfile {
 interface AuthState {
   user: UserProfile | null
   loading: boolean
+  authModalOpen: boolean
+  authModalTab: 'signin' | 'signup'
   setUser: (user: UserProfile | null) => void
+  setAuthModal: (open: boolean, tab?: 'signin' | 'signup') => void
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -29,8 +32,15 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: true,
+  authModalOpen: false,
+  authModalTab: 'signin',
 
   setUser: (user) => set({ user, loading: false }),
+
+  setAuthModal: (open, tab) => set((state) => ({
+    authModalOpen: open,
+    authModalTab: tab ?? state.authModalTab
+  })),
 
   signOut: async () => {
     const supabase = createClient()

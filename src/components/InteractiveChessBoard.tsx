@@ -3,9 +3,12 @@
 import { Chessboard } from "react-chessboard";
 import { Chess, Move, Square } from "chess.js";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Monitor, User, RotateCcw, Zap } from "lucide-react";
+import { Monitor, User, RotateCcw, Zap, Cpu } from "lucide-react";
+import { useBoardTheme } from "@/components/BoardThemeProvider";
+import { claimTodayStreak } from "@/lib/streak";
 
 export default function InteractiveChessBoard() {
+  const { boardTheme } = useBoardTheme();
   const [game, setGame] = useState(new Chess());
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [status, setStatus] = useState("White to move");
@@ -15,13 +18,55 @@ export default function InteractiveChessBoard() {
   const [optionSquares, setOptionSquares] = useState<Record<string, React.CSSProperties>>({});
   const movesRef = useRef<HTMLDivElement>(null);
 
+  // Sound Engine
+  const [audioCtx, setAudioCtx] = useState<AudioContext | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioCtxClass) {
+      const ctx = new AudioCtxClass();
+      setAudioCtx(ctx);
+      audioCtxRef.current = ctx;
+    }
+  }, []);
+
+  const playSound = (freq: number, dur: number, type: OscillatorType = "sine") => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    try {
+      if (ctx.state === "suspended") ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + dur);
+    } catch {}
+  };
+
   const makeMove = useCallback((move: { from: string; to: string; promotion?: string }) => {
     try {
+      const isCapture = game.get(move.to as Square) !== null;
       const result = game.move(move);
       if (result) {
+        claimTodayStreak(); // Secure streak point on active gameplay!
         const newGame = new Chess(game.fen());
         setGame(newGame);
         setMoveHistory(prev => [...prev, result.san]);
+
+        if (newGame.isCheck() || newGame.isGameOver()) {
+          playSound(440, 0.2);
+        } else if (isCapture) {
+          playSound(280, 0.15, "triangle");
+        } else {
+          playSound(320, 0.1);
+        }
+
         setTimeout(() => {
           movesRef.current?.scrollTo({ top: movesRef.current.scrollHeight, behavior: 'smooth' });
         }, 50);
@@ -124,6 +169,7 @@ export default function InteractiveChessBoard() {
   };
 
   const resetGame = () => {
+    playSound(320, 0.1);
     setGame(new Chess());
     setMoveHistory([]);
     setStatus("White to move");
@@ -139,45 +185,39 @@ export default function InteractiveChessBoard() {
   }, []);
 
   const isGameOver = game.isGameOver();
-  const turnColor = game.turn() === "w" ? "White" : "Black";
 
   return (
-    <div className="w-full h-full flex flex-col lg:flex-row overflow-hidden">
+    <div className="w-full h-full flex flex-col lg:flex-row overflow-hidden bg-salon font-montserrat">
 
-      {/* ── BOARD COLUMN ─────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col gap-2 p-3 sm:p-4 min-h-0 overflow-hidden">
+      {/* ── BOARD COLUMN ── */}
+      <div className="flex-1 h-full flex flex-col gap-3 p-4 sm:p-6 min-h-0 overflow-hidden items-center justify-center">
 
-        {/* Opponent label */}
-        <div className="card-surface !py-2.5 !px-4 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-slate-800 dark:bg-white/10 flex items-center justify-center text-xs font-bold text-[var(--text-primary)] flex-shrink-0">
-            ♟
+        {/* Opponent Label */}
+        <div className="w-full max-w-[540px] flex items-center justify-between p-2.5 rounded-sm border-2 border-[var(--text-primary)] bg-white shadow-[2px_2px_0px_var(--text-primary)]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-sm bg-[var(--bg-secondary)] border-2 border-[var(--text-primary)] flex items-center justify-center text-sm font-black shadow-sm">
+              ♟
+            </div>
+            <div>
+              <p className="text-xs font-black text-[var(--text-primary)] uppercase tracking-tight">
+                {playVsComputer ? "Stockfish Engine" : "Player 2 (Black)"}
+              </p>
+              {isComputerThinking && (
+                <p className="text-[10px] text-[var(--primary)] font-bold animate-pulse">Thinking…</p>
+              )}
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-[var(--text-primary)]">
-              {playVsComputer ? "Stockfish Engine" : "Player 2 (Black)"}
-            </p>
-            {isComputerThinking && (
-              <p className="text-xs text-[var(--primary)] animate-pulse">Thinking…</p>
-            )}
-          </div>
-          {!isGameOver && (
-            <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg ${
-              game.turn() === 'b'
-                ? 'bg-[var(--primary)]/10 text-[var(--primary)]'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
-            }`}>
-              {game.turn() === 'b' ? '⏳ To move' : ''}
+          {!isGameOver && game.turn() === 'b' && (
+            <span className="text-[9px] bg-[var(--primary)] border-2 border-[var(--text-primary)] text-white font-bold px-2 py-0.5 rounded-sm animate-pulse uppercase tracking-wider">
+              Their Turn
             </span>
           )}
         </div>
 
-        {/* Board — height-first: never taller than available space */}
-        <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden p-1">
-          <div
-            className="card-elevated !p-2 sm:!p-3"
-            style={{ height: '100%', aspectRatio: '1 / 1', maxWidth: '100%' }}
-          >
-            <div className="w-full h-full rounded-xl overflow-hidden">
+        {/* Board Aspect-Ratio Restricting Wrapper */}
+        <div className="w-full max-w-[540px] aspect-square flex justify-center items-center">
+          <div className="w-full h-full bg-[var(--bg-elevated)] border-2 border-[var(--text-primary)] outline-1 outline-[var(--text-primary)] outline-offset-4 shadow-[6px_6px_0px_var(--text-primary)] rounded-sm p-4 sm:p-5 relative">
+            <div className="w-full h-full rounded-sm overflow-hidden border-2 border-[var(--text-primary)] bg-white">
               <Chessboard
                 options={{
                   position: game.fen(),
@@ -185,50 +225,49 @@ export default function InteractiveChessBoard() {
                     onDrop(sourceSquare, targetSquare, piece),
                   onSquareClick: handleSquareClick as never,
                   squareStyles: optionSquares,
-                  darkSquareStyle: { backgroundColor: "#2563EB" },
-                  lightSquareStyle: { backgroundColor: "#EFF6FF" },
+                  darkSquareStyle: { backgroundColor: boardTheme.dark },
+                  lightSquareStyle: { backgroundColor: boardTheme.light },
                   animationDurationInMs: 150,
+                  allowDragging: !isGameOver && game.turn() === "w",
                 }}
               />
             </div>
           </div>
         </div>
 
-        {/* My label */}
-        <div className="card-surface !py-2.5 !px-4 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-[var(--primary)] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-            ♙
+        {/* My Label */}
+        <div className="w-full max-w-[540px] flex items-center justify-between p-2.5 rounded-sm border-2 border-[var(--text-primary)] bg-white shadow-[2px_2px_0px_var(--text-primary)]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-sm bg-[var(--primary)] border-2 border-[var(--text-primary)] flex items-center justify-center text-xs font-bold text-white shadow-sm">
+              ♙
+            </div>
+            <div>
+              <p className="text-xs font-black text-[var(--text-primary)] uppercase tracking-tight">
+                {playVsComputer ? "You (White)" : "Player 1 (White)"}
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-[var(--text-primary)]">
-              {playVsComputer ? "You (White)" : "Player 1 (White)"}
-            </p>
-          </div>
-          {!isGameOver && (
-            <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg ${
-              game.turn() === 'w'
-                ? 'bg-[var(--primary)]/10 text-[var(--primary)]'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
-            }`}>
-              {game.turn() === 'w' ? '✓ Your turn' : ''}
+          {!isGameOver && game.turn() === 'w' && (
+            <span className="text-[9px] bg-emerald-50 border-2 border-emerald-800 text-emerald-800 font-bold px-2 py-0.5 rounded-sm animate-pulse uppercase tracking-wider">
+              Your Turn
             </span>
           )}
         </div>
       </div>
 
-      {/* ── SIDE PANEL ───────────────────────────────────────────────────── */}
-      <div className="w-full lg:w-72 xl:w-80 flex flex-col border-t lg:border-t-0 lg:border-l border-[var(--border-primary)] min-h-0">
+      {/* ── SIDE PANEL ── */}
+      <div className="w-full lg:w-72 xl:w-80 flex flex-col border-t lg:border-t-0 lg:border-l-2 border-[var(--text-primary)] min-h-0 bg-[var(--bg-elevated)] flex-shrink-0">
 
-        {/* Mode selector */}
-        <div className="p-4 border-b border-[var(--border-primary)] flex-shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <span className="section-label">Mode</span>
+        {/* Mode Selector */}
+        <div className="p-4 border-b-2 border-[var(--text-primary)] flex-shrink-0 bg-[var(--bg-secondary)]/25 flex flex-col gap-3.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider font-mono">Game Mode</span>
             <button
-              onClick={() => { setPlayVsComputer(!playVsComputer); resetGame(); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              onClick={() => { playSound(320, 0.1); setPlayVsComputer(!playVsComputer); resetGame(); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm border-2 border-[var(--text-primary)] text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-[2px_2px_0px_var(--text-primary)] hover:-translate-y-0.5 active:translate-y-0.5 ${
                 playVsComputer
                   ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--border-hover)]'
+                  : 'bg-white text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/50'
               }`}
             >
               {playVsComputer ? <Monitor className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
@@ -236,39 +275,45 @@ export default function InteractiveChessBoard() {
             </button>
           </div>
 
-          {/* Status */}
-          <div className={`rounded-xl px-3 py-2.5 text-xs font-semibold flex items-center justify-between ${
+          {/* Status Bar */}
+          <div className={`rounded-sm px-3.5 py-3 text-xs font-black uppercase tracking-wide border-2 border-[var(--text-primary)] flex items-center justify-between shadow-[2px_2px_0px_var(--text-primary)] ${
             isGameOver
-              ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/25'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-primary)]'
+              ? 'bg-emerald-50 text-emerald-800'
+              : 'bg-white text-[var(--text-primary)]'
           }`}>
-            <span>{status}</span>
-            {!isGameOver && <Zap className="w-3 h-3 text-[var(--primary)]" />}
+            <span className="truncate">{status}</span>
+            {!isGameOver && <Zap className="w-3.5 h-3.5 text-[var(--primary)] animate-pulse" />}
           </div>
         </div>
 
-        {/* Move history */}
-        <div ref={movesRef} className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 min-h-0">
+        {/* Move History Panel Header */}
+        <div className="px-4 py-2.5 border-b-2 border-[var(--text-primary)] bg-[var(--bg-secondary)]/25 flex items-center gap-2">
+          <Zap className="w-3.5 h-3.5 text-[var(--primary)]" />
+          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] font-jost">Move History</span>
+        </div>
+
+        {/* Move History List */}
+        <div ref={movesRef} className="flex-1 overflow-y-auto p-3 flex flex-col gap-1.5 bg-white select-none min-h-0">
           {movePairs.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-xs text-[var(--text-muted)] text-center">No moves yet.<br />Make a move to start.</p>
+            <div className="flex-1 flex items-center justify-center text-center py-8">
+              <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-wider leading-relaxed">No moves yet.<br />Make a move to start.</p>
             </div>
           ) : (
             movePairs.map((pair, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">
-                <span className="text-[var(--text-muted)] w-6 flex-shrink-0 tabular-nums">{i + 1}.</span>
-                <span className="flex-1 font-mono font-semibold text-[var(--text-primary)]">{pair[0]}</span>
-                <span className="flex-1 font-mono text-[var(--text-secondary)]">{pair[1] ?? ''}</span>
+              <div key={i} className="flex items-center gap-2 text-xs py-1 px-2.5 rounded-sm hover:bg-[var(--bg-secondary)]/40 border-b border-[var(--text-primary)]/10 font-montserrat">
+                <span className="text-[var(--text-muted)] w-6 flex-shrink-0 tabular-nums font-bold">{i + 1}.</span>
+                <span className="flex-1 font-mono font-black text-[var(--text-primary)]">{pair[0]}</span>
+                <span className="flex-1 font-mono text-[var(--text-secondary)] font-bold">{pair[1] ?? ''}</span>
               </div>
             ))
           )}
         </div>
 
-        {/* Restart */}
-        <div className="p-3 border-t border-[var(--border-primary)] flex-shrink-0">
+        {/* Restart Action Bar */}
+        <div className="p-4 border-t-2 border-[var(--text-primary)] bg-[var(--bg-secondary)]/25 flex-shrink-0">
           <button
             onClick={resetGame}
-            className="btn-secondary w-full gap-2 !justify-center"
+            className="btn-secondary w-full py-2.5 text-xs font-black uppercase flex items-center justify-center gap-2"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Restart Game
           </button>

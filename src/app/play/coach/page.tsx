@@ -4,8 +4,10 @@ import { Chessboard } from "react-chessboard";
 import { Chess, Move, Square } from "chess.js";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Lightbulb, RotateCcw, Swords, MessageSquare, AlertCircle, HelpCircle, Check, Sparkles } from "lucide-react";
+import { useBoardTheme } from "@/components/BoardThemeProvider";
 
 export default function PlayCoachPage() {
+  const { boardTheme } = useBoardTheme();
   const [game, setGame] = useState(new Chess());
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [coachFeed, setCoachFeed] = useState<string[]>([
@@ -387,8 +389,8 @@ export default function PlayCoachPage() {
                     onDrop(sourceSquare, targetSquare, piece),
                   onSquareClick: handleSquareClick as never,
                   squareStyles: optionSquares,
-                  darkSquareStyle: { backgroundColor: "#2563EB" },
-                  lightSquareStyle: { backgroundColor: "#EFF6FF" },
+                  darkSquareStyle: { backgroundColor: boardTheme.dark },
+                  lightSquareStyle: { backgroundColor: boardTheme.light },
                   animationDurationInMs: 150,
                   allowDragging: !gameResult && game.turn() === "w",
                 }}

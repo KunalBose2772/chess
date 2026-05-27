@@ -1,350 +1,197 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { Crown, Swords, Trophy, Users, User, LogOut, ChevronDown, Moon, Sun, Tv, Sparkles, ArrowRight, Globe, Bot, Lightbulb, BarChart2, Dices, History, Menu, X } from 'lucide-react'
+import { useState } from 'react'
+import { Crown, Swords, Trophy, Users, User, LogOut, ChevronDown, Tv, Globe, Menu, X, Zap } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import AuthModal from './AuthModal'
-import { useTheme } from './ThemeProvider'
 import { usePathname } from 'next/navigation'
 
 export default function Navbar() {
-  const { user, signOut } = useAuthStore()
-  const [authOpen, setAuthOpen] = useState(false)
-  const [defaultTab, setDefaultTab] = useState<'signin' | 'signup'>('signin')
+  const { user, signOut, authModalOpen, authModalTab, setAuthModal } = useAuthStore()
   const [profileOpen, setProfileOpen] = useState(false)
-  const { theme, toggleTheme } = useTheme()
   const pathname = usePathname()
-  const [isPlayHovered, setIsPlayHovered] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
   const openAuth = (tab: 'signin' | 'signup') => {
-    setDefaultTab(tab)
-    setAuthOpen(true)
+    setAuthModal(true, tab)
   }
 
-  // Solid Colors active styling helper via highly robust static CSS classes
-  const getLinkClass = (path: string) => {
-    const isActive = path === '/' ? pathname === '/' : pathname?.startsWith(path)
-    return `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
-      isActive 
-        ? 'sidebar-link-active' 
-        : 'hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]'
-    }`
-  }
+  const navItems = [
+    { name: 'Play', href: '/play', icon: Swords },
+    { name: 'Puzzles', href: '/puzzles', icon: Trophy },
+    { name: 'Learn', href: '/learn', icon: Crown },
+    { name: 'Watch', href: '/watch', icon: Tv },
+    { name: 'Community', href: '/community', icon: Globe },
+    { name: 'Leaderboard', href: '/leaderboard', icon: Users },
+  ]
 
   return (
     <>
-      {/* Mobile Top Header */}
-      <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#080C16] border-b border-white/[0.08] sticky top-0 z-50 w-full h-14 font-montserrat">
+      {/* ── MOBILE HEADER ──────────────────────────────────────────────── */}
+      <header className="lg:hidden flex items-center justify-between px-6 py-4 border-b-2 border-[var(--text-primary)] bg-[var(--bg-main)] shrink-0 relative z-40">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+            className="p-2 -ml-2 border-2 border-[var(--text-primary)]/15 hover:bg-[var(--bg-secondary)] hover:border-[var(--text-primary)] rounded-[var(--radius-sm)] transition-all duration-200"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-6 h-6 text-[var(--text-primary)]" />
           </button>
           <Link href="/">
-            {mounted && theme === 'light' ? (
-              <img src="/images/logo-light.png" alt="ChessOnline Logo" className="w-[120px] h-auto object-contain" />
-            ) : (
-              <img src="/images/logo-dark.png" alt="ChessOnline Logo" className="w-[120px] h-auto object-contain" />
-            )}
+            <img src="/images/logo-dark.png" alt="ChessOnline Logo" className="h-[32px] w-auto" />
           </Link>
         </div>
-
-        <div className="flex items-center gap-2">
+        <div>
           {!user ? (
-            <>
-              <Link
-                href="/register"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer"
-              >
-                Sign Up
-              </Link>
-              <button
-                onClick={() => openAuth('signin')}
-                className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer"
-              >
-                Log In
-              </button>
-            </>
+            <button onClick={() => openAuth('signin')} className="btn-secondary px-4 py-2.5 text-[12px]">
+              Log In
+            </button>
           ) : (
-            <div className="relative">
-              <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-              >
-                <div className="w-6 h-6 bg-[var(--primary)] rounded-md flex items-center justify-center font-bold text-[10px] text-[#FFFFFF]">
-                  {user.username[0].toUpperCase()}
-                </div>
-                <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" />
-              </button>
-              {profileOpen && (
-                <div className="absolute right-0 top-full mt-2 w-40 bg-[#080C16] border border-white/[0.08] rounded-xl overflow-hidden z-50 shadow-2xl">
-                  <Link
-                    href={`/profile/${user.username}`}
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-[var(--text-secondary)] hover:bg-white/5 transition-colors w-full text-left cursor-pointer"
-                  >
-                    <User className="w-3.5 h-3.5" /> My Profile
-                  </Link>
-                  <button
-                    onClick={() => { signOut(); setProfileOpen(false) }}
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-red-500 hover:bg-red-500/10 transition-colors w-full text-left border-t border-white/5 cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" /> Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
+            <button 
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center gap-2 px-3 py-2 border-2 border-[var(--text-primary)] rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] shadow-[2px_2px_0_var(--text-primary)] font-bold text-[12px] transition-all hover:shadow-[3px_3px_0_var(--text-primary)]"
+            >
+              <div className="w-6 h-6 rounded-sm bg-[var(--primary)] text-white flex items-center justify-center text-[11px] font-black">
+                {user.username.charAt(0).toUpperCase()}
+              </div>
+              <ChevronDown className="w-4 h-4" />
+            </button>
           )}
         </div>
       </header>
 
-      {/* Backdrop overlay for mobile menu drawer */}
+      {/* ── DESKTOP & MOBILE SIDEBAR ─────────────────────────────────────── */}
+      {/* Overlay for mobile */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 z-[65] bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-[var(--text-primary)]/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar Drawer */}
-      <aside className={`fixed inset-y-0 left-0 z-[70] h-screen w-[260px] flex flex-col justify-between p-6 glass-sidebar transition-transform duration-300 font-montserrat lg:translate-x-0 lg:static lg:z-[60] lg:flex ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex flex-col gap-10">
+      <aside 
+        className={`fixed inset-y-0 left-0 h-screen w-[260px] min-w-[260px] max-w-[260px] shrink-0 flex flex-col bg-[var(--bg-main)] border-r-2 border-[var(--text-primary)] z-50 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:static lg:translate-x-0 lg:relative lg:inset-auto lg:h-auto ${
+          isMobileMenuOpen ? 'translate-x-0 shadow-[20px_0_40px_rgba(30,27,24,0.1)]' : '-translate-x-full'
+        }`}
+      >
+        {/* Sidebar Header (Logo) */}
+        <div className="flex justify-between items-center px-6 py-5 h-auto shrink-0 border-b-2 border-[var(--text-primary)]">
+          <Link href="/" className="transition-transform hover:scale-105 duration-300 w-full">
+            <img src="/images/logo-dark.png" alt="ChessOnline Logo" className="w-full h-auto drop-shadow-sm" />
+          </Link>
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)} 
+            className="lg:hidden p-2 -mr-2 border-2 border-transparent hover:bg-[var(--bg-secondary)] hover:border-[var(--text-primary)] rounded-[var(--radius-sm)] transition-all duration-200"
+          >
+            <X className="w-5 h-5 text-[var(--text-primary)]" />
+          </button>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-1.5 w-full scrollbar-none">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link 
+                key={item.name} 
+                href={item.href} 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] font-montserrat text-[13px] font-bold transition-all duration-200 w-full border-2 ${
+                  isActive 
+                    ? 'bg-[var(--primary)] border-[var(--primary)] shadow-[3px_3px_0_var(--text-primary)] text-white' 
+                    : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:bg-[var(--primary)] hover:border-[var(--primary)] hover:text-white hover:shadow-[2px_2px_0_var(--text-primary)]'
+                }`}
+              >
+                <item.icon className={`w-[20px] h-[20px] flex-shrink-0 transition-colors ${isActive ? 'text-white' : 'text-[var(--text-muted)] group-hover:text-white'}`} strokeWidth={2} />
+                <span className="leading-tight">{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Bottom Section (Premium CTA + Auth/Profile) */}
+        <div className="px-3 pt-3 pb-4 flex flex-col gap-3 shrink-0 border-t-2 border-[var(--text-primary)] bg-[var(--bg-secondary)]/20 w-full overflow-hidden relative">
           
-          {/* Logo with Close Button inside sidebar header */}
-          <div className="flex items-center justify-between w-full gap-2">
-            <Link href="/" className="flex-1 flex items-center justify-center group pl-1" onClick={() => setIsMobileMenuOpen(false)}>
-              <div className="flex items-center justify-center px-4 py-3 rounded-xl logo-card-container w-full transition-all">
-                {mounted && theme === 'light' ? (
-                   <img src="/images/logo-light.png" alt="ChessOnline Logo" className="w-[160px] h-auto object-contain opacity-95 transition-opacity" />
-                ) : (
-                   <img src="/images/logo-dark.png" alt="ChessOnline Logo" className="w-[160px] h-auto object-contain opacity-95 transition-opacity" />
-                )}
-              </div>
-            </Link>
-            <button 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
+          {/* Premium Card */}
+          <div className="p-3 rounded-[var(--radius-sm)] border-2 border-[var(--text-primary)] bg-[var(--bg-surface)] shadow-[3px_3px_0_var(--text-primary)] relative overflow-hidden group w-full min-w-0 transition-all hover:shadow-[4px_4px_0_var(--text-primary)] hover:-translate-y-0.5">
+            <div className="absolute -right-4 -top-4 w-14 h-14 bg-[var(--primary)]/15 rounded-full group-hover:scale-150 transition-transform duration-500 ease-out" />
+            <div className="flex items-center gap-2 mb-1.5 relative z-10">
+              <Zap className="w-4 h-4 text-amber-600 fill-amber-500 shrink-0" />
+              <h4 className="font-jost font-black text-[13px] text-[var(--text-primary)] tracking-tight uppercase leading-none">Premium</h4>
+            </div>
+            <p className="text-[11px] font-medium text-[var(--text-muted)] leading-[1.4] mb-2.5 relative z-10 whitespace-normal break-words">
+              Unlock unlimited puzzles and AI analysis.
+            </p>
+            <button className="w-full py-2 bg-[var(--primary)] text-white text-[11px] font-bold uppercase tracking-widest rounded-[var(--radius-sm)] border-2 border-[var(--text-primary)] shadow-[2px_2px_0_var(--text-primary)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--text-primary)] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none relative z-10">
+              Upgrade
             </button>
           </div>
 
-          {/* Sidebar Menu items using elegant Solid Colors active styling */}
-          <div className="flex flex-col gap-1 font-medium text-[13.5px] text-[var(--text-secondary)] tracking-wide">
-            <div 
-              className="relative"
-              onMouseEnter={() => setIsPlayHovered(true)}
-              onMouseLeave={() => setIsPlayHovered(false)}
-            >
-              <Link href="/play" className={getLinkClass('/play')} onClick={() => setIsMobileMenuOpen(false)}>
-                <Swords className="w-4 h-4" /> Play
-              </Link>
-
-              {/* Flyout Submenu Panel - Stretched and stuck flush to sidebar (Desktop Only) */}
-              <div 
-                className={`hidden lg:flex absolute left-[236px] top-[-12px] w-[270px] rounded-r-2xl rounded-l-none bg-[#080C16] p-3.5 z-[99] shadow-[10px_20px_50px_rgba(0,0,0,0.6)] border border-l-0 border-white/[0.08] transition-all duration-300 flex-col gap-1 before:content-[''] before:absolute before:left-[-40px] before:top-0 before:w-[40px] before:h-full before:bg-transparent ${
-                  isPlayHovered 
-                    ? 'opacity-100 translate-x-0 pointer-events-auto' 
-                    : 'opacity-0 -translate-x-2 pointer-events-none'
-                }`}
+          {/* User Section */}
+          {!user ? (
+            <div className="flex flex-col gap-2 w-full">
+              <button 
+                onClick={() => openAuth('signin')} 
+                className="w-full py-2.5 font-bold text-[12px] border-2 border-[var(--primary)] rounded-[var(--radius-sm)] transition-all bg-[var(--primary)]/10 hover:bg-[var(--primary)] hover:text-white text-[var(--primary)] shadow-[2px_2px_0_var(--text-primary)] hover:shadow-[3px_3px_0_var(--text-primary)] uppercase tracking-wider"
               >
-                <div className="px-2 pb-2 mb-1 border-b border-white/5 flex items-center justify-between">
-                  <span className="text-[10px] font-semibold tracking-wider text-[var(--text-muted)] uppercase">Arena Hub</span>
-                  <span className="flex items-center gap-1 text-[9px] text-[var(--primary)] font-semibold uppercase animate-pulse">● Live</span>
-                </div>
-                
-                <Link href="/play/online" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center transition-colors group-hover:bg-emerald-500 group-hover:text-white">
-                    <Globe className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[var(--text-primary)]">Play Online</span>
-                    <span className="text-[9px] text-[var(--text-muted)]">Real-time matchmaking ELO</span>
-                  </div>
-                </Link>
-
-                <Link href="/play/bots" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center transition-colors group-hover:bg-blue-500 group-hover:text-white">
-                    <Bot className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[var(--text-primary)]">Play Bots</span>
-                    <span className="text-[9px] text-[var(--text-muted)]">Challenge unique AI characters</span>
-                  </div>
-                </Link>
-
-                <Link href="/play/coach" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center transition-colors group-hover:bg-amber-500 group-hover:text-white">
-                    <Lightbulb className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[var(--text-primary)]">Play Coach</span>
-                    <span className="text-[9px] text-[var(--text-muted)]">Real-time dynamic AI guides</span>
-                  </div>
-                </Link>
-
-                <Link href="/play/stats" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center transition-colors group-hover:bg-purple-500 group-hover:text-white">
-                    <BarChart2 className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[var(--text-primary)]">Stats</span>
-                    <span className="text-[9px] text-[var(--text-muted)]">Check ELO progress & accuracy</span>
-                  </div>
-                </Link>
-
-                <Link href="/play/tournaments" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center transition-colors group-hover:bg-red-500 group-hover:text-white">
-                    <Trophy className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[var(--text-primary)]">Tournaments</span>
-                    <span className="text-[9px] text-[var(--text-muted)]">Swiss brackets and open arenas</span>
-                  </div>
-                </Link>
-
-                <Link href="/play/variants" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center transition-colors group-hover:bg-orange-500 group-hover:text-white">
-                    <Dices className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[var(--text-primary)]">Variants</span>
-                    <span className="text-[9px] text-[var(--text-muted)]">Fischer Random & custom modes</span>
-                  </div>
-                </Link>
-
-                <Link href="/play/history" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-500 flex items-center justify-center transition-colors group-hover:bg-teal-500 group-hover:text-white">
-                    <History className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[var(--text-primary)]">Game History</span>
-                    <span className="text-[9px] text-[var(--text-muted)]">Review and analyze past matches</span>
-                  </div>
-                </Link>
-              </div>
-            </div>
-            
-            <Link href="/puzzles" className={getLinkClass('/puzzles')} onClick={() => setIsMobileMenuOpen(false)}>
-              <Trophy className="w-4 h-4" /> Puzzles
-            </Link>
-            <Link href="/leaderboard" className={getLinkClass('/leaderboard')} onClick={() => setIsMobileMenuOpen(false)}>
-              <Users className="w-4 h-4" /> Leaderboard
-            </Link>
-            <Link href="/learn" className={getLinkClass('/learn')} onClick={() => setIsMobileMenuOpen(false)}>
-              <Crown className="w-4 h-4" /> Learn
-            </Link>
-            <Link href="/watch" className={getLinkClass('/watch')} onClick={() => setIsMobileMenuOpen(false)}>
-              <Tv className="w-4 h-4" /> Watch
-            </Link>
-            <Link href="/community" className={getLinkClass('/community')} onClick={() => setIsMobileMenuOpen(false)}>
-              <Users className="w-4 h-4" /> Community
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {/* Go Premium Card */}
-          <div className="p-4 rounded-xl premium-card-gold flex flex-col gap-2 relative group overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 dark:text-[var(--text-primary)]">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" />
-                Go Premium
-              </div>
-              <div className="w-6 h-6 rounded-full bg-blue-500/10 dark:bg-white/5 hover:bg-blue-500/20 dark:hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer">
-                <ArrowRight className="w-3 h-3 text-blue-600 dark:text-[var(--text-secondary)]" />
-              </div>
-            </div>
-            <p className="text-[10px] text-blue-700/80 dark:text-[var(--text-muted)] leading-normal font-light">
-              Unlock unlimited puzzles, advanced analytics, and more.
-            </p>
-          </div>
-
-          {/* Quiet Auth Buttons (Inside Sidebar for logged-out players) */}
-          {!user && (
-            <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
-              <Link
-                href="/register"
-                className="quiet-primary-btn w-full px-4 py-2.5 rounded-xl text-xs font-medium tracking-wide flex justify-center items-center cursor-pointer text-center"
+                Log In
+              </button>
+              <Link 
+                href="/register" 
                 onClick={() => setIsMobileMenuOpen(false)}
+                className="btn-primary w-full py-2.5 text-[12px] text-center block"
               >
                 Sign Up
               </Link>
-              <button
-                onClick={() => { openAuth('signin'); setIsMobileMenuOpen(false); }}
-                className="quiet-secondary-btn w-full px-4 py-2.5 rounded-xl text-xs font-medium tracking-wide flex justify-center items-center cursor-pointer"
-              >
-                Sign In
-              </button>
             </div>
-          )}
-
-          {user && (
-            <div className="relative">
-              <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="w-full flex items-center justify-between glass-panel px-4 py-2.5 rounded-xl hover:border-[var(--border-hover)] transition-all cursor-pointer"
+          ) : (
+            <div className="relative w-full">
+              <button 
+                onClick={() => setProfileOpen(!profileOpen)} 
+                className={`w-full flex items-center justify-between p-3 rounded-[var(--radius-sm)] border-2 transition-all ${
+                  profileOpen 
+                    ? 'border-[var(--text-primary)] bg-[var(--bg-surface)] shadow-[3px_3px_0_var(--text-primary)]' 
+                    : 'border-transparent hover:bg-[var(--bg-surface)] hover:border-[var(--text-primary)] hover:shadow-[3px_3px_0_var(--text-primary)]'
+                }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[var(--primary)] rounded-lg flex items-center justify-center font-bold text-xs text-[#FFFFFF]">
-                    {user.username[0].toUpperCase()}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-[38px] h-[38px] rounded-sm bg-[var(--primary)] border-2 border-[var(--text-primary)] flex items-center justify-center text-white font-black text-[15px] shrink-0">
+                    {user.username.charAt(0).toUpperCase()}
                   </div>
-                  <div className="text-left">
-                    <p className="text-xs font-semibold text-[var(--text-primary)] truncate max-w-[90px]">{user.username}</p>
-                    <p className="text-[10px] text-[var(--accent)]">⚡ {user.rating}</p>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="font-bold text-[13px] leading-tight text-[var(--text-primary)] truncate w-full">{user.username}</span>
+                    <span className="text-[11px] text-[var(--text-muted)] font-medium mt-0.5">Free Plan</span>
                   </div>
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] shrink-0 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {profileOpen && (
-                <div className="absolute left-0 bottom-full mb-2 w-full glass-panel rounded-xl overflow-hidden z-50 shadow-[var(--soft-shadow)]">
-                  <Link
-                    href={`/profile/${user.username}`}
-                    onClick={() => { setProfileOpen(false); setIsMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-2.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
-                  >
-                    <User className="w-3.5 h-3.5" /> My Profile
-                  </Link>
-                  <button
-                    onClick={() => { signOut(); setProfileOpen(false); setIsMobileMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" /> Sign Out
-                  </button>
-                </div>
-              )}
+              {/* Profile Dropdown */}
+              <div 
+                className={`absolute bottom-[calc(100%+8px)] left-0 right-0 bg-[var(--bg-surface)] border-2 border-[var(--text-primary)] rounded-[var(--radius-sm)] shadow-[4px_4px_0_var(--text-primary)] overflow-hidden transition-all duration-200 origin-bottom z-50 ${
+                  profileOpen ? 'opacity-100 scale-y-100 visible' : 'opacity-0 scale-y-95 invisible'
+                }`}
+              >
+                <Link 
+                  href={`/profile/${user.username}`}
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-3.5 text-[13px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors border-b-2 border-[var(--border-primary)]/15"
+                >
+                  <User className="w-4 h-4" /> Profile
+                </Link>
+                <button 
+                  onClick={() => { signOut(); setProfileOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3.5 text-[13px] font-bold text-red-700 hover:bg-red-50 hover:text-red-800 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" /> Sign Out
+                </button>
+              </div>
             </div>
           )}
-
-          {/* Bottom Row: Players Online, Language Selector, and Icon-only Theme Toggle */}
-          <div className="flex items-center justify-between pt-4 border-t border-white/5">
-            {/* Players online */}
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span className="text-[10px] font-light text-[var(--text-muted)] tracking-wider">100K Live</span>
-            </div>
-
-            {/* Language Selector */}
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-1 text-[10px] font-light text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer">
-                <Globe className="w-3.5 h-3.5 opacity-80" />
-                EN
-              </button>
-            </div>
-          </div>
         </div>
       </aside>
 
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} defaultTab={defaultTab} />
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModal(false)} defaultTab={authModalTab} />
     </>
-  )
+  );
 }
-

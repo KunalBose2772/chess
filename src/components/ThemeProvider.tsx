@@ -1,30 +1,16 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext } from 'react'
 
 type ThemeContextType = {
-  theme: 'light' | 'dark'
-  toggleTheme: () => void
+  theme: 'dark'
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme] = useState<'light' | 'dark'>('dark')
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-    document.documentElement.classList.add('dark')
-    localStorage.setItem('theme', 'dark')
-  }, [])
-
-  const toggleTheme = () => {
-    // Persistent dark theme active: toggle disabled
-  }
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: 'dark' }}>
       {children}
     </ThemeContext.Provider>
   )

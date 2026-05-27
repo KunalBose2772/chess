@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/auth";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
+import { useBoardTheme } from "@/components/BoardThemeProvider";
 
 interface GameHistoryItem {
   id: number;
@@ -72,6 +73,7 @@ const MOCK_HISTORY: GameHistoryItem[] = [
 ];
 
 export default function PlayHistoryPage() {
+  const { boardTheme } = useBoardTheme();
   const { user } = useAuthStore();
   const [history, setHistory] = useState<GameHistoryItem[]>(MOCK_HISTORY);
   const [searchTerm, setSearchTerm] = useState("");
@@ -320,8 +322,8 @@ export default function PlayHistoryPage() {
                     options={{
                       position: reviewChess.fen(),
                       boardOrientation: activeReviewGame.playerColor.toLowerCase() as any,
-                      darkSquareStyle: { backgroundColor: "#2563EB" },
-                      lightSquareStyle: { backgroundColor: "#EFF6FF" },
+                      darkSquareStyle: { backgroundColor: boardTheme.dark },
+                      lightSquareStyle: { backgroundColor: boardTheme.light },
                       animationDurationInMs: 150,
                       allowDragging: false,
                     }}

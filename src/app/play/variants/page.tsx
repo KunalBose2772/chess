@@ -4,6 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { Chess, Move, Square } from "chess.js";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Dices, RotateCcw, Swords, Info, Trophy, CheckCircle, Zap } from "lucide-react";
+import { useBoardTheme } from "@/components/BoardThemeProvider";
 
 interface Variant {
   id: string;
@@ -45,6 +46,7 @@ const VARIANTS: Variant[] = [
 ];
 
 export default function PlayVariantsPage() {
+  const { boardTheme } = useBoardTheme();
   const [selectedVariant, setSelectedVariant] = useState<Variant>(VARIANTS[0]);
   const [game, setGame] = useState(new Chess());
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
@@ -293,8 +295,8 @@ export default function PlayVariantsPage() {
                     onDrop(sourceSquare, targetSquare, piece),
                   onSquareClick: handleSquareClick as never,
                   squareStyles: optionSquares,
-                  darkSquareStyle: { backgroundColor: "#2563EB" },
-                  lightSquareStyle: { backgroundColor: "#EFF6FF" },
+                  darkSquareStyle: { backgroundColor: boardTheme.dark },
+                  lightSquareStyle: { backgroundColor: boardTheme.light },
                   animationDurationInMs: 150,
                   allowDragging: !gameResult,
                 }}
