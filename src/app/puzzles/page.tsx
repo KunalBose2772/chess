@@ -6,7 +6,8 @@ import { Chess } from 'chess.js'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   CheckCircle, XCircle, Lightbulb, RotateCcw, ChevronRight, 
-  Trophy, Zap, Eye, Compass, Volume2, VolumeX, Check, X, SlidersHorizontal
+  Trophy, Zap, Eye, Compass, Volume2, VolumeX, Check, X, SlidersHorizontal,
+  ChessKnight
 } from 'lucide-react'
 import { useBoardTheme } from '@/components/BoardThemeProvider'
 import { claimTodayStreak, getStreakData } from '@/lib/streak'
@@ -576,12 +577,29 @@ export default function PuzzlesPage() {
 
                 <div className="flex gap-3 items-start mt-1">
                   {/* Coach Avatar vector silhouette */}
-                  <div className="w-11 h-11 rounded-full bg-[var(--primary)] text-white border-2 border-[var(--text-primary)] flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden">
-                    <svg className="w-6 h-6 text-[#60a5fa]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 21a6 6 0 0 0-12 0" />
-                      <circle cx="12" cy="10" r="4" />
-                      <path d="M12 2v2" />
-                    </svg>
+                  <div 
+                    onClick={() => {
+                      playTap();
+                      speakText(
+                        solved 
+                          ? "Excellent work! That is the correct move sequence. Puzzle completed successfully!" 
+                          : failed 
+                          ? "Not quite. Try resetting the board or analyzing different attack structures." 
+                          : movesMade > 0 
+                          ? "Good job, that's correct so far! Keep calculating the remaining moves." 
+                          : `In this puzzle, it's your turn as ${turnLabel}. ELO rating is ${puzzle.rating}. ${puzzle.description}`
+                      );
+                    }}
+                    className={`w-12 h-12 rounded-full bg-gradient-to-br from-[#1E1B18] via-[#352F2A] to-[#1E1B18] text-[#B89047] border-2 border-[#B89047] flex items-center justify-center flex-shrink-0 shadow-[2px_2px_0px_var(--text-primary)] overflow-hidden transition-all duration-300 hover:scale-110 hover:-rotate-6 hover:border-[#D4A855] hover:shadow-[4px_4px_0px_var(--text-primary)] active:scale-95 cursor-pointer select-none group relative ${
+                      isSpeaking ? 'ring-4 ring-[#B89047]/30 shadow-[0_0_15px_rgba(184,144,71,0.5)] animate-pulse' : ''
+                    }`}
+                    title="Click to hear the coach's audio instructions!"
+                  >
+                    {/* Glowing highlight indicator */}
+                    <span className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    {/* Beautiful Detailed Chess Knight in Gold */}
+                    <ChessKnight className="w-7 h-7 text-[#B89047] group-hover:text-[#D4A855] transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] stroke-[1.5]" />
                   </div>
 
                   <div className="relative flex-1 bg-[var(--bg-surface)] border border-[var(--border-primary)] shadow-[4px_4px_0px_var(--text-primary)] border-2 p-3 rounded-[var(--radius-sm)] rounded-tl-none text-[11.5px] text-[var(--text-primary)] leading-relaxed font-montserrat shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
