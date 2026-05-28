@@ -108,7 +108,7 @@ export default function Home() {
 
         {/* ── LEFT: BOARD CARD ─────────────────────────────────────────── */}
         <div className="w-full max-w-[480px] lg:max-w-[560px] flex-shrink-0">
-          <div className="card-elevated !m-0 !p-3 w-full flex flex-col gap-2" style={{ maxHeight: '85vh' }}>
+          <div className="card-elevated !m-0 !p-3 w-full flex flex-col gap-2">
 
             {/* Black player (top) */}
             <div className="flex items-center justify-between px-0.5">
@@ -129,8 +129,8 @@ export default function Home() {
               }`}>{fmt(blackTime)}</div>
             </div>
 
-            {/* Board — flex-1 fills remaining card height; Chessboard renders square */}
-            <div className="flex-1 min-h-0 rounded-sm overflow-hidden border-2 border-[var(--text-primary)]">
+            {/* Board — Aspect square ensures it maintains a 1:1 ratio based on width */}
+            <div className="w-full aspect-square rounded-sm overflow-hidden border-2 border-[var(--text-primary)]">
               {mounted ? (
                 <Chessboard options={{
                   position: fen,

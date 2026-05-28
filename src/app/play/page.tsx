@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Flame, BookOpen, ChevronRight, X, Clock, Bot, Handshake, 
   BarChart2, AlignJustify, LayoutGrid, Zap, Trophy, Check, Swords
@@ -69,6 +70,7 @@ function tap() {
 export default function Dashboard() {
   const { user } = useAuthStore();
   const { boardTheme } = useBoardTheme();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [banner, setBanner] = useState(true);
   const [showStreakModal, setShowStreakModal] = useState(false);
@@ -172,19 +174,15 @@ export default function Dashboard() {
         {/* ── Stats Row (Solid Neobrutalist design system) ──────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { icon:<Flame className="w-4 h-4 text-amber-600 fill-current"/>, label:'Daily Streak', value: streakState.currentStreak === 1 ? '1 Day' : `${streakState.currentStreak} Days`, clickable: true },
-            { icon:<Zap   className="w-4 h-4 text-[var(--primary)]"/>,         label:'Puzzles',      value:'0 Solved', clickable: false },
-            { icon:<BookOpen className="w-4 h-4 text-amber-700"/>,             label:'Next Lesson',  value:'Capture Pieces', clickable: false },
-            { icon:<BarChart2 className="w-4 h-4 text-emerald-800"/>,         label:'Last Review',  value:'vs polly-BOT', clickable: false },
+            { icon:<Flame className="w-4 h-4 text-amber-600 fill-current"/>, label:'Daily Streak', value: streakState.currentStreak === 1 ? '1 Day' : `${streakState.currentStreak} Days`, action: () => { tap(); setShowStreakModal(true); } },
+            { icon:<Zap   className="w-4 h-4 text-[var(--primary)]"/>,         label:'Puzzles',      value:'0 Solved', href: '/puzzles' },
+            { icon:<BookOpen className="w-4 h-4 text-amber-700"/>,             label:'Next Lesson',  value:'Capture Pieces', href: '/learn' },
+            { icon:<BarChart2 className="w-4 h-4 text-emerald-800"/>,         label:'Last Review',  value:'vs polly-BOT', href: '/play/history' },
           ].map(s => (
             <div
               key={s.label}
-              onClick={s.clickable ? () => { tap(); setShowStreakModal(true); } : undefined}
-              className={`flex items-center gap-3.5 p-4 rounded-[var(--radius-sm)] border-2 border-[var(--text-primary)] bg-[var(--bg-surface)] shadow-[3px_3px_0px_var(--text-primary)] transition-all duration-200 ${
-                s.clickable 
-                  ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_var(--text-primary)] active:translate-y-0.5 active:shadow-[1px_1px_0px_var(--text-primary)]' 
-                  : 'cursor-default'
-              }`}
+              onClick={s.action ? s.action : () => { tap(); if (s.href) router.push(s.href); }}
+              className={`flex items-center gap-3.5 p-4 rounded-[var(--radius-sm)] border-2 border-[var(--text-primary)] bg-[var(--bg-surface)] shadow-[3px_3px_0px_var(--text-primary)] transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_var(--text-primary)] active:translate-y-0.5 active:shadow-[1px_1px_0px_var(--text-primary)]`}
             >
               <div className="w-8 h-8 rounded-sm bg-[var(--bg-secondary)] border-2 border-[var(--text-primary)] flex items-center justify-center flex-shrink-0">
                 {s.icon}

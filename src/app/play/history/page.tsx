@@ -197,20 +197,17 @@ export default function PlayHistoryPage() {
   );
 
   return (
-    <div className="page-section">
-      <div className="page-spot-tl" />
-      <div className="page-spot-br" />
-
-      <div className="page-container max-w-[1200px] gap-8">
+    <div className="w-full flex-1 flex flex-col bg-salon font-montserrat min-h-screen">
+      <div className="max-w-[1200px] w-full mx-auto px-6 py-8 flex flex-col gap-8 flex-1">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-[var(--border-primary)]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b-2 border-[var(--border-primary)]">
           <div className="flex flex-col gap-2">
-            <span className="section-label flex items-center gap-2">
-              <History className="w-3.5 h-3.5" /> Ledger Terminal
+            <span className="section-label">
+              <History className="w-3.5 h-3.5 mr-1.5" /> Ledger Terminal
             </span>
-            <h1 className="page-heading">Game History</h1>
-            <p className="page-subheading max-w-[650px] text-xs">
+            <h1 className="text-[28px] sm:text-[32px] font-black text-[var(--text-primary)] font-jost tracking-tight mt-1">Game History</h1>
+            <p className="text-[12px] text-[var(--text-muted)] font-medium max-w-[650px]">
               Review details of your completed matches. Click on any record to open the interactive sandbox review board.
             </p>
           </div>
@@ -223,7 +220,7 @@ export default function PlayHistoryPage() {
               placeholder="Search by opponent..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[var(--bg-secondary)]/50 border border-[var(--border-primary)] rounded-xl pl-10 pr-4 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-colors"
+              className="w-full bg-[var(--bg-secondary)]/50 border border-[var(--border-primary)] rounded-[var(--radius-sm)] pl-10 pr-4 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-colors"
             />
           </div>
         </div>
@@ -251,19 +248,19 @@ export default function PlayHistoryPage() {
                   <button
                     key={gameItem.id}
                     onClick={() => startReview(gameItem)}
-                    className={`card-elevated flex items-center justify-between p-4 text-left transition-all border cursor-pointer hover:border-[var(--border-hover)] ${
+                    className={`card-elevated flex items-center justify-between p-4 text-left transition-all cursor-pointer ${
                       activeReviewGame?.id === gameItem.id 
-                        ? 'border-[var(--primary)] bg-[var(--primary)]/[0.02]' 
-                        : 'border-[var(--border-primary)] bg-[var(--bg-surface)]'
+                        ? 'border-[var(--primary)] bg-[var(--bg-secondary)]' 
+                        : 'border-[var(--border-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-secondary)]'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shadow-sm flex-shrink-0 ${
+                      <div className={`w-8 h-8 rounded-sm flex items-center justify-center text-xs font-black text-[var(--text-primary)] border-2 border-[var(--text-primary)] shadow-[2px_2px_0px_var(--text-primary)] flex-shrink-0 ${
                         gameItem.result === 'Win' 
-                          ? 'bg-emerald-500' 
+                          ? 'bg-emerald-500 text-white' 
                           : gameItem.result === 'Loss' 
-                          ? 'bg-red-500' 
-                          : 'bg-slate-400 dark:bg-slate-700'
+                          ? 'bg-red-500 text-white' 
+                          : 'bg-slate-400'
                       }`}>
                         {gameItem.result[0]}
                       </div>
@@ -317,7 +314,7 @@ export default function PlayHistoryPage() {
 
               <div className="card-elevated p-5 flex flex-col sm:flex-row gap-5 relative overflow-hidden">
                 {/* Chessboard */}
-                <div className="w-full sm:w-[220px] aspect-square flex-shrink-0 rounded-xl overflow-hidden shadow-inner border border-[var(--border-primary)] bg-[var(--bg-secondary)]/10">
+                <div className="w-full sm:w-[220px] aspect-square flex-shrink-0 rounded-[var(--radius-sm)] overflow-hidden shadow-inner border border-[var(--border-primary)] bg-[var(--bg-secondary)]/10">
                   <Chessboard
                     options={{
                       position: reviewChess.fen(),
@@ -368,7 +365,7 @@ export default function PlayHistoryPage() {
                   </div>
 
                   {/* Mini scrolling list of moves */}
-                  <div className="h-20 overflow-y-auto bg-black/[0.02] dark:bg-white/[0.01] rounded-xl border border-[var(--border-primary)] p-2">
+                  <div className="h-20 overflow-y-auto bg-black/[0.02] dark:bg-white/[0.01] rounded-[var(--radius-sm)] border border-[var(--border-primary)] p-2">
                     <div className="flex flex-wrap gap-1.5">
                       {activeReviewGame.moves.map((mv, idx) => (
                         <button
@@ -384,7 +381,7 @@ export default function PlayHistoryPage() {
                           }}
                           className={`text-[9.5px] font-mono font-semibold px-2 py-0.5 rounded transition-all cursor-pointer ${
                             currentMoveIndex === idx
-                              ? 'bg-[var(--primary)] text-white'
+                              ? 'bg-[var(--primary)] text-[var(--text-primary)]'
                               : 'bg-[var(--bg-secondary)]/50 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                           }`}
                         >

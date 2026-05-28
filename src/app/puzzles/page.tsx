@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Chessboard } from 'react-chessboard'
 import { Chess } from 'chess.js'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   CheckCircle, XCircle, Lightbulb, RotateCcw, ChevronRight, 
-  Trophy, Zap, Eye, Compass, Volume2, VolumeX, Check, X
+  Trophy, Zap, Eye, Compass, Volume2, VolumeX, Check, X, SlidersHorizontal
 } from 'lucide-react'
 import { useBoardTheme } from '@/components/BoardThemeProvider'
 import { claimTodayStreak, getStreakData } from '@/lib/streak'
@@ -60,9 +60,9 @@ const PUZZLES = [
 ]
 
 const DIFFICULTY_COLORS: Record<string, string> = {
-  Beginner: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-  Intermediate: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-  Advanced: 'text-red-400 bg-red-500/10 border-red-500/20',
+  Beginner: 'text-emerald-700 bg-emerald-100 border-emerald-700 font-black',
+  Intermediate: 'text-amber-700 bg-amber-100 border-amber-700 font-black',
+  Advanced: 'text-red-700 bg-red-100 border-red-700 font-black',
 }
 
 const THEMES = ['All', 'Attack', 'Checkmate', 'Fork', 'Back Rank', 'Sacrifice']
@@ -100,6 +100,9 @@ export default function PuzzlesPage() {
   const [showStreakToast, setShowStreakToast] = useState(false)
   const [toastStreakVal, setToastStreakVal] = useState(0)
 
+  // Mobile sidebar state
+  const [showSidebar, setShowSidebar] = useState(false)
+
   const triggerStreakToast = () => {
     const data = getStreakData()
     setToastStreakVal(data.currentStreak)
@@ -107,6 +110,17 @@ export default function PuzzlesPage() {
   }
 
   const turnLabel = game.turn() === 'w' ? 'White' : 'Black'
+
+  const boardRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to ensure board is perfectly in view
+  useEffect(() => {
+    if (!showOnboarding && boardRef.current) {
+      setTimeout(() => {
+        boardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+    }
+  }, [puzzleIndex, showOnboarding])
 
   const speakText = (text: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
@@ -266,81 +280,68 @@ export default function PuzzlesPage() {
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col bg-transparent font-montserrat min-h-screen">
-      <div className="max-w-[1160px] w-full mx-auto px-6 py-8 flex flex-col gap-6 flex-1">
+    <div className="w-full flex-1 flex flex-col bg-salon font-montserrat min-h-screen">
+      <div className="max-w-[1160px] w-full mx-auto px-6 py-5 flex flex-col gap-5 flex-1">
 
-        {/* ── Header ────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 bg-cyan-400/8 border border-cyan-400/20 px-3 py-1 rounded-full self-start flex items-center gap-1.5">
-              <Zap className="w-3 h-3 fill-current" /> Training Mode
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-black text-white font-jost tracking-tight mt-1">Chess Tactics</h1>
-            <p className="text-[12px] text-slate-500 max-w-xl">Sharpen your pattern recognition, calculate aggressive lines, and expand your strategic chess game.</p>
-          </div>
-          <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] w-fit shadow-md self-start md:self-auto">
-            <Trophy className="w-4.5 h-4.5 text-amber-400" />
-            <div>
-              <p className="text-[9px] text-slate-500 uppercase tracking-widest font-semibold leading-none">Solved Today</p>
-              <p className="text-[14px] font-bold text-slate-200 mt-1">{score} Puzzles</p>
+        {/* ── Header (Ultra Compact) ────────────────────── */}
+        <div className="flex items-center justify-between bg-[var(--bg-surface)] border-2 border-[var(--border-primary)] shadow-[4px_4px_0px_var(--text-primary)] p-2.5 px-3 sm:p-3 sm:px-4 rounded-[var(--radius-sm)]">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-emerald-600 text-white rounded-sm border-2 border-emerald-800 shadow-[2px_2px_0px_rgba(6,78,59,1)]">
+              <Zap className="w-3 h-3 fill-current" />
+              <span className="text-[9px] font-black uppercase tracking-widest leading-none hidden sm:inline-block">Training</span>
             </div>
+            <h1 className="text-lg sm:text-xl font-black text-[var(--text-primary)] font-jost tracking-tight leading-none">Chess Tactics</h1>
+            <p className="text-[11px] font-medium text-[var(--text-muted)] hidden md:block border-l-2 border-[var(--border-primary)] pl-4">
+              Sharpen pattern recognition and calculate lines.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest hidden sm:inline-block">Solved Today:</span>
+                <span className="text-sm sm:text-base font-black text-[var(--text-primary)]">{score}</span>
+              </div>
+            </div>
+            
+            {/* Mobile Sidebar Toggle Button */}
+            <button 
+              onClick={() => { playTap(); setShowSidebar(true); }}
+              className="lg:hidden p-1.5 bg-[var(--bg-surface)] border-2 border-[var(--border-primary)] rounded-sm shadow-[2px_2px_0px_var(--text-primary)] active:scale-95 transition-transform"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-[var(--text-primary)]" />
+            </button>
           </div>
         </div>
 
-        {/* ── Filters Bar ───────────────────────────────── */}
-        <div className="flex flex-col gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-          <div>
-            <p className="text-[9.5px] font-black uppercase tracking-[0.18em] text-slate-600 mb-2">Tactical Category</p>
-            <div className="flex flex-wrap gap-2">
-              {THEMES.map(theme => (
-                <button
-                  key={theme}
-                  onClick={() => handleFilterTheme(theme)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    selectedTheme === theme
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                      : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
-                  }`}
-                >
-                  {theme}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-[9.5px] font-black uppercase tracking-[0.18em] text-slate-600 mb-2">Difficulty Rating</p>
-            <div className="flex flex-wrap gap-2">
-              {DIFFICULTIES.map(diff => (
-                <button
-                  key={diff}
-                  onClick={() => handleFilterDifficulty(diff)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    selectedDifficulty === diff
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
-                      : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
-                  }`}
-                >
-                  {diff}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+
 
         {/* ── Main Layout ────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Board + Alert Banners */}
-          <div className="lg:col-span-8 flex flex-col gap-4">
+          <div className="lg:col-span-7 flex flex-col gap-4">
             
             {/* Chessboard Card */}
-            <div className="p-4 rounded-3xl bg-white/[0.02] border border-white/[0.05] shadow-lg flex items-center justify-center">
-              <div className="w-full max-w-[540px] aspect-square rounded-2xl overflow-hidden shadow-2xl relative">
+            <div 
+              ref={boardRef} 
+              onPointerDown={() => {
+                if (boardRef.current) {
+                  boardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              }}
+              className="w-full aspect-square rounded-[var(--radius-sm)] overflow-hidden border-2 border-[var(--border-primary)] shadow-[6px_6px_0px_var(--text-primary)] relative bg-[var(--bg-surface)]"
+            >
                 {filteredPuzzles.length > 0 ? (
                   <Chessboard
                     options={{
                       position: game.fen(),
                       onPieceDrop: onPieceDrop,
+                      onPieceDragBegin: () => {
+                        if (boardRef.current) {
+                          boardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }
+                      },
                       darkSquareStyle: { backgroundColor: boardTheme.dark },
                       lightSquareStyle: { backgroundColor: boardTheme.light },
                       animationDurationInMs: 180,
@@ -348,10 +349,10 @@ export default function PuzzlesPage() {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/50 p-6 text-center border border-white/[0.05]">
-                    <Compass className="w-12 h-12 text-slate-600 mb-3 animate-pulse" />
-                    <p className="text-sm font-bold text-slate-300">No matching puzzles found</p>
-                    <p className="text-xs text-slate-500 mt-1 max-w-xs">Try selecting a different theme or difficulty combination.</p>
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/50 p-6 text-center border border-[var(--border-primary)] shadow-[4px_4px_0px_var(--text-primary)] border-2">
+                    <Compass className="w-12 h-12 text-[var(--text-primary)] mb-3 animate-pulse" />
+                    <p className="text-sm font-bold text-[var(--text-primary)]">No matching puzzles found</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1 max-w-xs">Try selecting a different theme or difficulty combination.</p>
                   </div>
                 )}
 
@@ -372,18 +373,18 @@ export default function PuzzlesPage() {
                         initial={{ scale: 0, rotate: -20 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.15 }}
-                        className="relative w-24 h-24 bg-gradient-to-br from-amber-600 to-amber-800 rounded-2xl flex items-center justify-center shadow-lg border border-amber-500/20 mb-4 select-none"
+                        className="relative w-24 h-24 bg-gradient-to-br from-amber-600 to-amber-800 rounded-[var(--radius-sm)] flex items-center justify-center shadow-[4px_4px_0px_var(--text-primary)] border border-amber-500/20 mb-4 select-none"
                       >
                         {/* Puzzle piece knobs using absolute circles */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-amber-600 border border-amber-500/20" />
                         <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-amber-700" />
                         
-                        <span className="text-3xl font-black text-white font-jost">
+                        <span className="text-3xl font-black text-[var(--text-primary)] font-jost">
                           {puzzle.id}
                         </span>
                         
                         {/* Shimmer reflection */}
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite]" />
+                        <div className="absolute inset-0 rounded-[var(--radius-sm)] bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite]" />
                       </motion.div>
 
                       {/* Victory Headers */}
@@ -391,7 +392,7 @@ export default function PuzzlesPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="text-lg sm:text-xl font-black text-white tracking-tight font-jost"
+                        className="text-lg sm:text-xl font-black text-[var(--text-primary)] tracking-tight font-jost"
                       >
                         You Completed Level {puzzle.id}!
                       </motion.h4>
@@ -411,16 +412,14 @@ export default function PuzzlesPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}
                         onClick={nextPuzzle}
-                        className="mt-5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/20 cursor-pointer flex items-center gap-1.5 border border-blue-500/20"
+                        className="mt-5 px-6 py-2.5 rounded-[var(--radius-sm)] bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 active:scale-95 text-[var(--text-primary)] font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/20 cursor-pointer flex items-center gap-1.5 border border-blue-500/20"
                       >
                         Next Puzzle <ChevronRight className="w-4 h-4" />
                       </motion.button>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
             </div>
-
             {/* Status alerts */}
             <AnimatePresence mode="wait">
               {solved && (
@@ -429,14 +428,14 @@ export default function PuzzlesPage() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-4 shadow-lg backdrop-blur-md"
+                  className="p-5 rounded-[var(--radius-sm)] bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-4 shadow-[4px_4px_0px_var(--text-primary)] backdrop-blur-md"
                 >
                   <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-[13px] font-bold text-emerald-300">Tactics Solved! 🎉</p>
                     <p className="text-[11px] text-emerald-400/60 mt-0.5 font-medium">Excellent calculation and pattern recognition.</p>
                   </div>
-                  <button onClick={nextPuzzle} className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-[11px] uppercase tracking-wider transition-all shadow-md cursor-pointer flex items-center gap-1">
+                  <button onClick={nextPuzzle} className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-[var(--text-primary)] font-bold px-4 py-2 rounded-[var(--radius-sm)] text-[11px] uppercase tracking-wider transition-all shadow-md cursor-pointer flex items-center gap-1">
                     Next <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </motion.div>
@@ -447,14 +446,14 @@ export default function PuzzlesPage() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="p-5 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-4 shadow-lg backdrop-blur-md"
+                  className="p-5 rounded-[var(--radius-sm)] bg-red-500/10 border border-red-500/20 flex items-center gap-4 shadow-[4px_4px_0px_var(--text-primary)] backdrop-blur-md"
                 >
                   <XCircle className="w-6 h-6 text-red-400 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-[13px] font-bold text-red-300">Incorrect Move</p>
                     <p className="text-[11px] text-red-400/60 mt-0.5 font-medium">You lost material or missed checkmate. Try again or check the hint.</p>
                   </div>
-                  <button onClick={resetPuzzle} className="bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 text-slate-300 font-bold px-4 py-2 rounded-xl text-[11px] uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1">
+                  <button onClick={resetPuzzle} className="bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 text-[var(--text-primary)] font-bold px-4 py-2 rounded-[var(--radius-sm)] text-[11px] uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1">
                     <RotateCcw className="w-3.5 h-3.5" /> Retry
                   </button>
                 </motion.div>
@@ -462,12 +461,78 @@ export default function PuzzlesPage() {
             </AnimatePresence>
           </div>
 
-          {/* Right Column: Active Puzzle Widgets */}
+          {/* Right Column: Active Puzzle Widgets (Off-Canvas on Mobile) */}
           {filteredPuzzles.length > 0 && (
-            <div className="lg:col-span-4 flex flex-col gap-5">
+            <>
+              {/* Mobile Sidebar Overlay */}
+              <AnimatePresence>
+                {showSidebar && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowSidebar(false)}
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden"
+                  />
+                )}
+              </AnimatePresence>
+
+              <div className={`fixed inset-y-0 right-0 z-[70] w-[85vw] max-w-[360px] bg-salon border-l-2 border-[var(--border-primary)] shadow-2xl flex flex-col transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:static lg:w-auto lg:max-w-none lg:bg-transparent lg:border-none lg:shadow-none lg:translate-x-0 lg:z-auto lg:col-span-5 ${
+                showSidebar ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+              }`}>
+                {/* Mobile Header – sticky, outside scroll area */}
+                <div className="shrink-0 lg:hidden flex justify-between items-center px-5 py-4 border-b-2 border-dashed border-[var(--border-primary)]">
+                  <h2 className="font-jost text-xl font-black tracking-tight text-[var(--text-primary)]">Training Hub</h2>
+                  <button onClick={() => setShowSidebar(false)} className="p-2 border-2 border-[var(--border-primary)] rounded-sm bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--text-primary)] text-[var(--text-primary)] active:scale-90 transition-transform">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Scrollable content area */}
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pt-5 pb-4 flex flex-col gap-5" style={{scrollbarWidth:'none'}}>
+              
+              {/* Filters Sidebar */}
+              <div className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border-2 border-[var(--border-primary)] shadow-[4px_4px_0px_var(--text-primary)] p-4 flex flex-col gap-4">
+                <div>
+                  <p className="text-[9.5px] font-black uppercase tracking-[0.18em] text-[var(--text-primary)] mb-2">Tactical Category</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {THEMES.map(theme => (
+                      <button
+                        key={theme}
+                        onClick={() => handleFilterTheme(theme)}
+                        className={`px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all cursor-pointer border-2 ${
+                          selectedTheme === theme
+                            ? 'bg-[var(--primary)] border-[var(--primary)] text-white shadow-[2px_2px_0px_var(--text-primary)]'
+                            : 'bg-[var(--bg-surface)] border-[var(--border-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                        }`}
+                      >
+                        {theme}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[9.5px] font-black uppercase tracking-[0.18em] text-[var(--text-primary)] mb-2">Difficulty Rating</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DIFFICULTIES.map(diff => (
+                      <button
+                        key={diff}
+                        onClick={() => handleFilterDifficulty(diff)}
+                        className={`px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all cursor-pointer border-2 ${
+                          selectedDifficulty === diff
+                            ? 'bg-[var(--primary)] border-[var(--primary)] text-white shadow-[2px_2px_0px_var(--text-primary)]'
+                            : 'bg-[var(--bg-surface)] border-[var(--border-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                        }`}
+                      >
+                        {diff}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
               
               {/* Premium AI Chess Coach & TTS Chamber */}
-              <div className="rounded-3xl bg-gradient-to-b from-[#18181b] to-[#111113] border border-white/[0.06] p-5 shadow-xl flex flex-col gap-4 relative overflow-hidden">
+              <div className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--bg-elevated)] border-2 border-[var(--text-primary)] shadow-[4px_4px_0px_var(--text-primary)] p-5 flex flex-col gap-4 relative overflow-hidden">
                 {/* Ambient glow in background */}
                 <div className="absolute -top-12 -right-12 w-28 h-28 bg-[#3b82f6]/5 rounded-full blur-2xl pointer-events-none" />
 
@@ -494,7 +559,7 @@ export default function PuzzlesPage() {
                     className={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
                       speechEnabled 
                         ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20' 
-                        : 'bg-white/5 border-white/10 text-slate-500 hover:bg-white/10'
+                        : 'bg-white/5 border-white/10 text-[var(--text-muted)] hover:bg-white/10'
                     }`}
                     title={speechEnabled ? "Mute Coach TTS" : "Enable Coach TTS"}
                   >
@@ -511,7 +576,7 @@ export default function PuzzlesPage() {
 
                 <div className="flex gap-3 items-start mt-1">
                   {/* Coach Avatar vector silhouette */}
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#3b82f6]/20 to-[#60a5fa]/20 border border-[#3b82f6]/30 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden">
+                  <div className="w-11 h-11 rounded-full bg-[var(--primary)] text-white border-2 border-[var(--text-primary)] flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden">
                     <svg className="w-6 h-6 text-[#60a5fa]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 21a6 6 0 0 0-12 0" />
                       <circle cx="12" cy="10" r="4" />
@@ -519,7 +584,7 @@ export default function PuzzlesPage() {
                     </svg>
                   </div>
 
-                  <div className="relative flex-1 bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl rounded-tl-none text-[11.5px] text-slate-300 leading-relaxed font-montserrat shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
+                  <div className="relative flex-1 bg-[var(--bg-surface)] border border-[var(--border-primary)] shadow-[4px_4px_0px_var(--text-primary)] border-2 p-3 rounded-[var(--radius-sm)] rounded-tl-none text-[11.5px] text-[var(--text-primary)] leading-relaxed font-montserrat shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
                     {/* Small speech bubble pointer */}
                     <div className="absolute top-0 -left-1.5 w-0 h-0 border-t-[8px] border-t-white/[0.03] border-l-[8px] border-l-transparent" />
                     
@@ -531,13 +596,13 @@ export default function PuzzlesPage() {
                     ) : movesMade > 0 ? (
                       <span>Good job, that's correct so far! Keep calculating the remaining moves.</span>
                     ) : (
-                      <span>In this puzzle, it's your turn as <strong className="text-slate-100">{turnLabel}</strong>. ELO rating is <strong className="text-slate-100">{puzzle.rating}</strong>. {puzzle.description}</span>
+                      <span>In this puzzle, it's your turn as <strong className="text-[var(--primary)] font-black">{turnLabel}</strong>. ELO rating is <strong className="text-[var(--primary)] font-black">{puzzle.rating}</strong>. {puzzle.description}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-3 border-t border-white/[0.04] text-[10px] text-slate-500 font-semibold font-jost">
-                  <div className={`w-2 h-2 rounded-full ${turnLabel === 'White' ? 'bg-slate-100 border border-slate-300 shadow animate-pulse' : 'bg-slate-800 border border-white/10'}`} />
+                <div className="flex items-center gap-2 pt-3 border-t border-white/[0.04] text-[10px] text-[var(--text-muted)] font-semibold font-jost">
+                  <div className={`w-2 h-2 rounded-full ${turnLabel === 'White' ? 'bg-[var(--bg-surface)] border-2 border-[var(--text-primary)] shadow-[1px_1px_0px_var(--text-primary)] animate-pulse' : 'bg-[var(--text-primary)] shadow-[1px_1px_0px_var(--text-muted)]'}`} />
                   <span>{turnLabel.toUpperCase()} TO PLAY</span>
                 </div>
               </div>
@@ -545,32 +610,32 @@ export default function PuzzlesPage() {
               {/* Show Hint card */}
               <button
                 onClick={() => { playTap(); setShowHint(true); }}
-                className="w-full text-left rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.1] p-4 flex items-center gap-3.5 transition-all shadow cursor-pointer group"
+                className="shrink-0 w-full text-left rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border-2 border-[var(--border-primary)] shadow-[4px_4px_0px_var(--text-primary)] p-4 flex items-center gap-3.5 transition-all cursor-pointer group"
               >
-                <div className="w-9 h-9 rounded-xl bg-amber-500/8 border border-amber-500/15 flex items-center justify-center flex-shrink-0 group-hover:brightness-110 transition-all">
-                  <Lightbulb className={`w-4.5 h-4.5 ${showHint ? 'text-amber-400 fill-current' : 'text-slate-500'}`} />
+                <div className="w-9 h-9 rounded-[var(--radius-sm)] bg-amber-500/8 border border-amber-500/15 flex items-center justify-center flex-shrink-0 group-hover:brightness-110 transition-all">
+                  <Lightbulb className={`w-4.5 h-4.5 ${showHint ? 'text-amber-400 fill-current' : 'text-[var(--text-muted)]'}`} />
                 </div>
                 <div className="min-w-0 flex-1">
                   {showHint ? (
-                    <p className="text-[12px] text-slate-300 leading-snug">
+                    <p className="text-[12px] text-[var(--text-primary)] leading-snug">
                       Move <strong className="text-amber-400">{puzzle.solution[0].slice(0, 2).toUpperCase()}</strong> to{' '}
                       <strong className="text-amber-400">{puzzle.solution[0].slice(2, 4).toUpperCase()}</strong>
                     </p>
                   ) : (
                     <>
-                      <p className="text-[12px] font-bold text-slate-200 leading-none">Stuck?</p>
-                      <p className="text-[10px] text-slate-500 mt-1">Reveal target coordinate hint</p>
+                      <p className="text-[12px] font-bold text-[var(--text-primary)] leading-none">Stuck?</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">Reveal target coordinate hint</p>
                     </>
                   )}
                 </div>
-                {!showHint && <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 ml-auto group-hover:translate-x-0.5 transition-all" />}
+                {!showHint && <ChevronRight className="w-4 h-4 text-[var(--text-primary)] group-hover:text-[var(--text-muted)] ml-auto group-hover:translate-x-0.5 transition-all" />}
               </button>
 
               {/* Gorgeous Winding Progression Path */}
-              <div className="rounded-3xl bg-gradient-to-b from-[var(--bg-surface)] to-[var(--bg-secondary)] border border-[var(--border-primary)] p-5 shadow-lg relative overflow-hidden flex flex-col gap-4 font-montserrat">
+              <div className="shrink-0 rounded-[var(--radius-sm)] bg-gradient-to-b from-[var(--bg-surface)] to-[var(--bg-secondary)] border-2 border-[var(--border-primary)] p-5 shadow-[4px_4px_0px_var(--text-primary)] relative overflow-hidden flex flex-col gap-4 font-montserrat">
                 <p className="text-[9.5px] font-black uppercase tracking-[0.18em] text-[var(--text-muted)]">Progression Path</p>
                 
-                <div className="relative py-4 flex flex-col items-center gap-6 min-h-[220px] justify-center z-10">
+                <div className="relative py-4 flex flex-col items-center gap-6 justify-center z-10">
                   {/* Vertical connecting pathway path */}
                   <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-[80%] border-l-2 border-dashed border-white/10 -z-10" />
  
@@ -593,10 +658,10 @@ export default function PuzzlesPage() {
                         }}
                         className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer font-jost text-[13px] font-black relative ${staggerClass} ${
                           isCompleted
-                            ? 'bg-gradient-to-br from-[#81b64c] to-[#68993c] text-white shadow-md shadow-emerald-500/10 border border-emerald-400/20 hover:scale-105'
+                            ? 'bg-gradient-to-br from-[#81b64c] to-[#68993c] text-[var(--text-primary)] shadow-md shadow-emerald-500/10 border border-emerald-400/20 hover:scale-105'
                             : isActive
-                            ? 'bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] text-white shadow-[0_0_15px_rgba(129,182,76,0.6)] border border-[var(--primary)]/20 scale-110 hover:scale-115'
-                            : 'bg-white/[0.02] border border-white/[0.05] text-slate-500 hover:text-slate-300 hover:bg-white/[0.05] hover:scale-105'
+                            ? 'bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] text-[var(--text-primary)] shadow-[0_0_15px_rgba(129,182,76,0.6)] border border-[var(--primary)]/20 scale-110 hover:scale-115'
+                            : 'bg-[var(--bg-surface)] border border-[var(--border-primary)] shadow-[4px_4px_0px_var(--text-primary)] border-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] hover:scale-105'
                         }`}
                       >
                         {isCompleted ? (
@@ -613,24 +678,31 @@ export default function PuzzlesPage() {
                     );
                   })}
                 </div>
- 
-                <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium pt-3 border-t border-white/[0.04]">
+
+                <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium pt-3 border-t border-white/[0.04]">
                   <span>Category completion</span>
                   <span className="font-bold text-[var(--primary)]">{Math.round(((puzzleIndex) / filteredPuzzles.length) * 100)}%</span>
                 </div>
               </div>
- 
-              {/* Quick Controls */}
-              <div className="flex gap-3">
-                <button onClick={resetPuzzle} className="flex-1 py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] active:scale-95 text-slate-300 font-bold text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md">
-                  <RotateCcw className="w-4 h-4" /> Reset
-                </button>
-                <button onClick={nextPuzzle} className="flex-1 py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] active:scale-95 text-slate-300 font-bold text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md">
-                  Skip <ChevronRight className="w-4 h-4" />
-                </button>
+              {/* end progression card */}
+
               </div>
- 
-            </div>
+              {/* end scrollable area */}
+
+              {/* Quick Controls - Sticky Bottom */}
+              <div className="shrink-0 px-5 py-3 bg-[var(--bg-surface)] border-t-2 border-[var(--border-primary)] lg:hidden">
+                <div className="flex gap-3">
+                  <button onClick={resetPuzzle} className="flex-1 py-2.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border-2 border-[var(--border-primary)] shadow-[2px_2px_0px_var(--text-primary)] hover:bg-[var(--bg-secondary)] active:scale-95 text-[var(--text-primary)] font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    <RotateCcw className="w-3.5 h-3.5" /> Reset
+                  </button>
+                  <button onClick={nextPuzzle} className="flex-1 py-2.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border-2 border-[var(--border-primary)] shadow-[2px_2px_0px_var(--text-primary)] hover:bg-[var(--bg-secondary)] active:scale-95 text-[var(--text-primary)] font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    Skip <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              </div>
+            </>
           )}
  
         </div>
@@ -658,7 +730,7 @@ export default function PuzzlesPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 15 }}
               transition={{ type: "spring", stiffness: 380, damping: 28 }}
-              className="relative w-full max-w-[340px] rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-primary)] shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-5 text-center z-10 overflow-hidden font-montserrat"
+              className="relative w-full max-w-[340px] rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border border-[var(--border-primary)] shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-5 text-center z-10 overflow-hidden font-montserrat"
             >
               {/* Radial ambient glow core reflection */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-[var(--primary)]/10 rounded-full blur-2xl -z-10 animate-pulse" />
@@ -670,23 +742,23 @@ export default function PuzzlesPage() {
                   setShowOnboarding(false);
                   playTap();
                 }}
-                className="absolute top-4 right-4 text-slate-500 hover:text-slate-200 hover:bg-white/5 active:scale-90 p-1.5 rounded-full transition-all cursor-pointer border border-white/0 hover:border-white/5"
+                className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5 active:scale-90 p-1.5 rounded-full transition-all cursor-pointer border border-white/0 hover:border-white/5"
               >
                 <X className="w-4 h-4" />
               </button>
  
               {/* Header Titles */}
-              <h3 className="text-xl font-black text-white tracking-tight font-jost mt-3">
+              <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tight font-jost mt-3">
                 Chess Puzzles
               </h3>
-              <p className="text-[11px] text-slate-400 mt-1 max-w-[240px] mx-auto leading-relaxed">
+              <p className="text-[11px] text-[var(--text-muted)] mt-1 max-w-[240px] mx-auto leading-relaxed">
                 Train with chess puzzles and improve your game.
               </p>
  
               {/* Hardware-accelerated SVG rising bar chart animation */}
               <div className="flex justify-center my-4">
-                <div className="relative w-36 h-28 bg-white/[0.01] border border-white/[0.04] rounded-2xl flex items-end justify-center gap-2.5 p-4 overflow-hidden">
-                  <div className="absolute inset-0 bg-[var(--primary)]/[0.03] rounded-2xl blur-xl" />
+                <div className="relative w-36 h-28 bg-white/[0.01] border border-white/[0.04] rounded-[var(--radius-sm)] flex items-end justify-center gap-2.5 p-4 overflow-hidden">
+                  <div className="absolute inset-0 bg-[var(--primary)]/[0.03] rounded-[var(--radius-sm)] blur-xl" />
                   <div className="w-6 h-10 bg-[var(--bg-elevated)] rounded-md border border-white/[0.03]" />
                   <div className="w-6 h-14 bg-[var(--bg-elevated)] rounded-md border border-white/[0.03]" />
                   <div className="w-6 h-18 bg-[var(--bg-elevated)] rounded-md border border-white/[0.03]" />
@@ -725,22 +797,22 @@ export default function PuzzlesPage() {
                 <div className="flex items-start gap-2.5">
                   <span className="text-sm mt-0.5 select-none">🧩</span>
                   <div className="leading-snug">
-                    <p className="text-[11px] font-bold text-slate-200">Increase your ELO rating</p>
-                    <p className="text-[9.5px] text-slate-500">Solve puzzles incrementally to unlock higher ratings.</p>
+                    <p className="text-[11px] font-bold text-[var(--text-primary)]">Increase your ELO rating</p>
+                    <p className="text-[9.5px] text-[var(--text-muted)]">Solve puzzles incrementally to unlock higher ratings.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <span className="text-sm mt-0.5 select-none">📈</span>
                   <div className="leading-snug">
-                    <p className="text-[11px] font-bold text-slate-200">Adaptive difficulty matching</p>
-                    <p className="text-[9.5px] text-slate-500">Puzzles automatically get more challenging as you improve.</p>
+                    <p className="text-[11px] font-bold text-[var(--text-primary)]">Adaptive difficulty matching</p>
+                    <p className="text-[9.5px] text-[var(--text-muted)]">Puzzles automatically get more challenging as you improve.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <span className="text-sm mt-0.5 select-none">⚡</span>
                   <div className="leading-snug">
-                    <p className="text-[11px] font-bold text-slate-200">Solve quickly for time bonus</p>
-                    <p className="text-[9.5px] text-slate-500">Maximize your rating points by finding key moves fast.</p>
+                    <p className="text-[11px] font-bold text-[var(--text-primary)]">Solve quickly for time bonus</p>
+                    <p className="text-[9.5px] text-[var(--text-muted)]">Maximize your rating points by finding key moves fast.</p>
                   </div>
                 </div>
               </div>
@@ -753,7 +825,7 @@ export default function PuzzlesPage() {
                     setShowOnboarding(false);
                     playTap();
                   }}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] hover:from-[var(--primary-hover)] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[var(--primary)]/20 cursor-pointer flex items-center justify-center border border-[var(--primary)]/20 font-montserrat"
+                  className="w-full py-3 rounded-[var(--radius-sm)] bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] hover:from-[var(--primary-hover)] active:scale-[0.98] text-[var(--text-primary)] font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[var(--primary)]/20 cursor-pointer flex items-center justify-center border border-[var(--primary)]/20 font-montserrat"
                 >
                   Start training
                 </button>
@@ -770,21 +842,21 @@ export default function PuzzlesPage() {
             initial={{ opacity: 0, x: 50, y: 0, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
             exit={{ opacity: 0, x: 50, scale: 0.9 }}
-            className="fixed bottom-5 right-5 z-50 w-64 rounded-2xl bg-[var(--bg-surface)] border border-orange-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.6)] p-3.5 flex items-center gap-3 backdrop-blur-md font-montserrat"
+            className="fixed bottom-5 right-5 z-50 w-64 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border border-orange-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.6)] p-3.5 flex items-center gap-3 backdrop-blur-md font-montserrat"
           >
             {/* Ambient orange glow container */}
-            <div className="absolute inset-0 rounded-2xl bg-orange-500/[0.02] -z-10" />
+            <div className="absolute inset-0 rounded-[var(--radius-sm)] bg-orange-500/[0.02] -z-10" />
  
             {/* Glowing Pawn Flame Badge */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500/10 to-amber-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+            <div className="w-10 h-10 rounded-[var(--radius-sm)] bg-gradient-to-tr from-orange-500/10 to-amber-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
               <span className="text-xl select-none animate-bounce" style={{ animationDuration: '2s' }}>🔥</span>
             </div>
  
             <div className="flex-1 min-w-0">
-              <h5 className="text-[12px] font-black text-white font-jost tracking-tight leading-tight">
+              <h5 className="text-[12px] font-black text-[var(--text-primary)] font-jost tracking-tight leading-tight">
                 {toastStreakVal} Day Streak!
               </h5>
-              <p className="text-[9.5px] text-slate-500 leading-normal mt-0.5 font-medium">
+              <p className="text-[9.5px] text-[var(--text-muted)] leading-normal mt-0.5 font-medium">
                 Your daily training drill is secured.
               </p>
             </div>
@@ -792,7 +864,7 @@ export default function PuzzlesPage() {
             {/* Compact close trigger */}
             <button
               onClick={() => setShowStreakToast(false)}
-              className="text-slate-600 hover:text-slate-400 p-0.5 rounded transition-all cursor-pointer"
+              className="text-[var(--text-primary)] hover:text-[var(--text-muted)] p-0.5 rounded transition-all cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
